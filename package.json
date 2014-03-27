@@ -1,11 +1,12 @@
 {
   "name": "upndown",
-  "description": "Markdown to HTML converter, written in Javascript",
+  "description": "Markdown to HTML converter",
   "version": "0.0.1",
   "keywords": [
     "markdown",
     "html",
-    "html2markdown"
+    "html2markdown",
+    "htmltomarkdown",
   ],
   "maintainers": [
     {

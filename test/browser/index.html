@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>upndown testing zone</title>
+
+	<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.14.0.css">
+	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.14.0.js"></script>
+	<script type="text/javascript" src="http://requirejs.org/docs/release/2.1.11/minified/require.js"></script>
+
+    <script type="text/javascript">
+
+    require.config({
+        paths: {
+            'htmlparser': '../../node_modules/htmlparser-jresig/htmlparser-lib/htmlparser',
+            'upndown': '../../lib/upndown',
+            'jquery': 'https://code.jquery.com/jquery-2.1.0.min'
+        }
+    });
+
+    // Main file for loading RequireJS necessary bits
+    QUnit.config.autostart = false;
+     
+    require(['jquery', 'upndown'], function($, upndown) {
+
+        var und = new upndown();
+
+        $.ajax('../fixtures/fixtures.json', {
+            success: function(fixturesindex) {
+                for(fixturesectionkey in fixturesindex) {
+                    var fixturesection = fixturesindex[fixturesectionkey];
+
+                    (function(fsection) {
+                        test(fsection.section, function() {
+
+                            for(fixturekey in fsection['fixtures']) {
+                                var fixture = fsection['fixtures'][fixturekey];
+
+                                var input = false;
+                                var expected = false;
+
+                                $.ajax('../fixtures/' + fixture.input, {
+                                    async: false,
+                                    success: function(data) {
+                                        input = data;
+                                    }
+                                });
+
+                                $.ajax('../fixtures/' + fixture.expected, {
+                                    async: false,
+                                    success: function(data) {
+                                        expected = data;
+                                    }
+                                });
+
+                                if(input === false) {
+                                    throw new Exception('Fixture input "' + fixture.input + '" could not be loaded.');
+                                }
+
+                                if(expected === false) {
+                                    throw new Exception('Fixture expected result "' + fixture.input + '" could not be loaded.');
+                                }
+
+                                equal(und.convert(input), expected);
+                            }
+                        });
+                    })(fixturesection);
+                }
+
+                QUnit.start(); //Tests loaded, run tests
+            }
+        });
+    });
+
+    </script>
+</head>
+<body>
+<div id="qunit"></div>
+</body>
+</html>
