@@ -3,14 +3,6 @@ var fs = require('fs');
 var upndown = require(__dirname + '/../../lib/upndown.js');
 var und = new upndown();
 
-/*
-var htmlsource = [
-    '<h1>Hello, World !</h1>',
-    '<ul><li>One.</li><li>Two.</li></ul>'
-];
-
-console.log(und.convert(htmlsource.join('\n')));
-*/
 var fixturesbasedir = __dirname + '/../fixtures/';
 
 fs.readFile(fixturesbasedir + 'fixtures.json', function (err, data) {
@@ -42,25 +34,3 @@ fs.readFile(fixturesbasedir + 'fixtures.json', function (err, data) {
         console.log(successcount + ' tests all OK.');
     }
 });
-
-/*fs.readFile(__dirname + '/index.md', function (err, data) {
-    if (err) {
-        throw err;
-    }
-
-    var markdownsource = data.toString();
-    var html = marked(markdownsource);
-    var markdownbuilt = h2m.convert(html);
-    var htmlbuilt = marked(markdownbuilt);
-
-
-    console.log('----------------------------------------------------------------------');
-    console.log(markdownsource);
-    console.log('----------------------------------------------------------------------');
-    console.log(html);
-    console.log('----------------------------------------------------------------------');
-    console.log(markdownbuilt);
-    //console.log('----------------------------------------------------------------------');
-    //console.log(htmlbuilt);
-    console.log('----------------------------------------------------------------------');
-});*/
