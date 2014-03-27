@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>upndown testing zone</title>
+
+	<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.14.0.css">
+	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.14.0.js"></script>
+	<script type="text/javascript" src="http://requirejs.org/docs/release/2.1.11/minified/require.js"></script>
+
+    <script type="text/javascript">
+
+    require.config({
+        paths: {
+            'htmlparser': '../../node_modules/htmlparser-jresig/htmlparser-lib/htmlparser',
+            'unittests': '../lib/unittests',
+            'upndown': '../../lib/upndown'
+        }
+    });
+
+    // Main file for loading RequireJS necessary bits
+    QUnit.config.autostart = false;
+     
+    require(['unittests'], function() {
+        QUnit.start(); //Tests loaded, run tests
+    });
+
+    </script>
+</head>
+<body>
+<div id="qunit"></div>
+</body>
+</html>

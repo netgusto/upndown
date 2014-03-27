@@ -1,0 +1,33 @@
+{
+  "name": "upndown",
+  "description": "Markdown to HTML converter, written in Javascript",
+  "version": "0.0.1",
+  "keywords": [
+    "markdown",
+    "html",
+    "html2markdown"
+  ],
+  "maintainers": [
+    {
+      "name": "Net Gusto",
+      "email": "contact@netgusto.com",
+      "web": "http://netgusto.com"
+    }
+  ],
+  "dependencies": {
+    "htmlparser-jresig": "1.0.0",
+    "jsdom": "0.10.3"
+  },
+  "repository": [
+    {
+      "type": "git",
+      "url": "https://github.com/netgusto/upndown.git"
+    }
+  ],
+  "licenses": [
+    {
+      "name": "The MIT License (MIT)",
+      "url": "https://github.com/netgusto/upndown/blob/master/LICENSE"
+    }
+  ]
+}

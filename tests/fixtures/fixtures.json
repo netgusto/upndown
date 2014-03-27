@@ -1,0 +1,482 @@
+[
+    {
+        "section": "amps",
+        "fixtures": [
+            {
+                "input": "amps/amp.html",
+                "expected": "amps/amp.md"
+            },
+            {
+                "input": "amps/copy.html",
+                "expected": "amps/copy.md"
+            },
+            {
+                "input": "amps/lt.html",
+                "expected": "amps/lt.md"
+            }
+        ]
+    },
+    {
+        "section": "basics",
+        "fixtures": [
+            {
+                "input": "basics/basic-combi.html",
+                "expected": "basics/basic-combi.md"
+            },
+            {
+                "input": "basics/blockquote.html",
+                "expected": "basics/blockquote.md"
+            },
+            {
+                "input": "basics/bold.html",
+                "expected": "basics/bold.md"
+            },
+            {
+                "input": "basics/code.html",
+                "expected": "basics/code.md"
+            },
+            {
+                "input": "basics/emphasized.html",
+                "expected": "basics/emphasized.md"
+            },
+            {
+                "input": "basics/empty.html",
+                "expected": "basics/empty.md"
+            },
+            {
+                "input": "basics/h1.html",
+                "expected": "basics/h1.md"
+            },
+            {
+                "input": "basics/h2.html",
+                "expected": "basics/h2.md"
+            },
+            {
+                "input": "basics/h3.html",
+                "expected": "basics/h3.md"
+            },
+            {
+                "input": "basics/h4.html",
+                "expected": "basics/h4.md"
+            },
+            {
+                "input": "basics/h5.html",
+                "expected": "basics/h5.md"
+            },
+            {
+                "input": "basics/h6.html",
+                "expected": "basics/h6.md"
+            },
+            {
+                "input": "basics/hr.html",
+                "expected": "basics/hr.md"
+            },
+            {
+                "input": "basics/html.html",
+                "expected": "basics/html.md"
+            },
+            {
+                "input": "basics/img.html",
+                "expected": "basics/img.md"
+            },
+            {
+                "input": "basics/link.html",
+                "expected": "basics/link.md"
+            },
+            {
+                "input": "basics/olist.html",
+                "expected": "basics/olist.md"
+            },
+            {
+                "input": "basics/paragraph.html",
+                "expected": "basics/paragraph.md"
+            },
+            {
+                "input": "basics/pre.html",
+                "expected": "basics/pre.md"
+            },
+            {
+                "input": "basics/strong.html",
+                "expected": "basics/strong.md"
+            },
+            {
+                "input": "basics/ulist.html",
+                "expected": "basics/ulist.md"
+            },
+            {
+                "input": "basics/linebreaks.html",
+                "expected": "basics/linebreaks.md"
+            }
+        ]
+    },
+    {
+        "section": "blockquote",
+        "fixtures": [
+            {
+                "input": "blockquote/markdown-inside.html",
+                "expected": "blockquote/markdown-inside.md"
+            },
+            {
+                "input": "blockquote/nested.html",
+                "expected": "blockquote/nested.md"
+            },
+            {
+                "input": "blockquote/one-p-inside.html",
+                "expected": "blockquote/one-p-inside.md"
+            },
+            {
+                "input": "blockquote/two-p-inside.html",
+                "expected": "blockquote/two-p-inside.md"
+            }
+        ]
+    },
+    {
+        "section": "code",
+        "fixtures": [
+            {
+                "input": "code/empty.html",
+                "expected": "code/empty.md"
+            },
+            {
+                "input": "code/html-entities-inside.html",
+                "expected": "code/html-entities-inside.md"
+            },
+            {
+                "input": "code/html-inside.html",
+                "expected": "code/html-inside.md"
+            },
+            {
+                "input": "code/inside-paragraph.html",
+                "expected": "code/inside-paragraph.md"
+            },
+            {
+                "input": "code/long.html",
+                "expected": "code/long.md"
+            },
+            {
+                "input": "code/newline.html",
+                "expected": "code/newline.md"
+            },
+            {
+                "input": "code/p-wrapped.html",
+                "expected": "code/p-wrapped.md"
+            },
+            {
+                "input": "code/pre-wrapped-asterisks.html",
+                "expected": "code/pre-wrapped-asterisks.md"
+            },
+            {
+                "input": "code/pre-wrapped-htmlentities.html",
+                "expected": "code/pre-wrapped-htmlentities.md"
+            },
+            {
+                "input": "code/pre-wrapped-whitespace.html",
+                "expected": "code/pre-wrapped-whitespace.md"
+            },
+            {
+                "input": "code/pre-wrapped.html",
+                "expected": "code/pre-wrapped.md"
+            },
+            {
+                "input": "code/simple.html",
+                "expected": "code/simple.md"
+            },
+            {
+                "input": "code/strong-wrapped.html",
+                "expected": "code/strong-wrapped.md"
+            },
+            {
+                "input": "code/whitespace.html",
+                "expected": "code/whitespace.md"
+            }
+        ]
+    },
+    {
+        "section": "emphasis",
+        "fixtures": [
+            {
+                "input": "emphasis/em.html",
+                "expected": "emphasis/em.md"
+            },
+            {
+                "input": "emphasis/intext.html",
+                "expected": "emphasis/intext.md"
+            },
+            {
+                "input": "emphasis/literal.html",
+                "expected": "emphasis/literal.md"
+            },
+            {
+                "input": "emphasis/strong.html",
+                "expected": "emphasis/strong.md"
+            },
+            {
+                "input": "emphasis/twowords.html",
+                "expected": "emphasis/twowords.md"
+            }
+        ]
+    },
+    {
+        "section": "header",
+        "fixtures": [
+            {
+                "input": "header/em.html",
+                "expected": "header/em.md"
+            },
+            {
+                "input": "header/link.html",
+                "expected": "header/link.md"
+            },
+            {
+                "input": "header/newline-whitespace.html",
+                "expected": "header/newline-whitespace.md"
+            },
+            {
+                "input": "header/newline.html",
+                "expected": "header/newline.md"
+            }
+        ]
+    },
+    {
+        "section": "images",
+        "fixtures": [
+            {
+                "input": "images/withouttitle.html",
+                "expected": "images/withouttitle.md"
+            },
+            {
+                "input": "images/withtitle.html",
+                "expected": "images/withtitle.md"
+            }
+        ]
+    },
+    {
+        "section": "links",
+        "fixtures": [
+            {
+                "input": "links/autolink.html",
+                "expected": "links/autolink.md"
+            },
+            {
+                "input": "links/intext.html",
+                "expected": "links/intext.md"
+            },
+            {
+                "input": "links/maillinks.html",
+                "expected": "links/maillinks.md"
+            },
+            {
+                "input": "links/withouttitle.html",
+                "expected": "links/withouttitle.md"
+            },
+            {
+                "input": "links/withtitle.html",
+                "expected": "links/withtitle.md"
+            }
+        ]
+    },
+    {
+        "section": "lists",
+        "fixtures": [
+            {
+                "input": "lists/multiple-p.html",
+                "expected": "lists/multiple-p.md"
+            },
+            {
+                "input": "lists/nested-multiple-mixed-p-wrapped.html",
+                "expected": "lists/nested-multiple-mixed-p-wrapped.md"
+            },
+            {
+                "input": "lists/nested-multiple-mixed.html",
+                "expected": "lists/nested-multiple-mixed.md"
+            },
+            {
+                "input": "lists/nested-multiple.html",
+                "expected": "lists/nested-multiple.md"
+            },
+            {
+                "input": "lists/olist-loose.html",
+                "expected": "lists/olist-loose.md"
+            },
+            {
+                "input": "lists/olist-nested-threelines.html",
+                "expected": "lists/olist-nested-threelines.md"
+            },
+            {
+                "input": "lists/olist-nested-twolines.html",
+                "expected": "lists/olist-nested-twolines.md"
+            },
+            {
+                "input": "lists/olist-nested.html",
+                "expected": "lists/olist-nested.md"
+            },
+            {
+                "input": "lists/olist-oneline.html",
+                "expected": "lists/olist-oneline.md"
+            },
+            {
+                "input": "lists/olist-p-inside.html",
+                "expected": "lists/olist-p-inside.md"
+            },
+            {
+                "input": "lists/olist-threelines-p-wrapped.html",
+                "expected": "lists/olist-threelines-p-wrapped.md"
+            },
+            {
+                "input": "lists/olist-tight.html",
+                "expected": "lists/olist-tight.md"
+            },
+            {
+                "input": "lists/olist-twolines-one-p-wrapped.html",
+                "expected": "lists/olist-twolines-one-p-wrapped.md"
+            },
+            {
+                "input": "lists/olist-twolines-p-wrapped.html",
+                "expected": "lists/olist-twolines-p-wrapped.md"
+            },
+            {
+                "input": "lists/olist-twolines.html",
+                "expected": "lists/olist-twolines.md"
+            },
+            {
+                "input": "lists/ulist-blockquote-inside.html",
+                "expected": "lists/ulist-blockquote-inside.md"
+            },
+            {
+                "input": "lists/ulist-loose.html",
+                "expected": "lists/ulist-loose.md"
+            },
+            {
+                "input": "lists/ulist-nested-threelines.html",
+                "expected": "lists/ulist-nested-threelines.md"
+            },
+            {
+                "input": "lists/ulist-nested-twolines.html",
+                "expected": "lists/ulist-nested-twolines.md"
+            },
+            {
+                "input": "lists/ulist-nested.html",
+                "expected": "lists/ulist-nested.md"
+            },
+            {
+                "input": "lists/ulist-oneline.html",
+                "expected": "lists/ulist-oneline.md"
+            },
+            {
+                "input": "lists/ulist-p-inside.html",
+                "expected": "lists/ulist-p-inside.md"
+            },
+            {
+                "input": "lists/ulist-pre-inside.html",
+                "expected": "lists/ulist-pre-inside.md"
+            },
+            {
+                "input": "lists/ulist-threelines-p-wrapped.html",
+                "expected": "lists/ulist-threelines-p-wrapped.md"
+            },
+            {
+                "input": "lists/ulist-tight.html",
+                "expected": "lists/ulist-tight.md"
+            },
+            {
+                "input": "lists/ulist-twolines-one-p-wrapped.html",
+                "expected": "lists/ulist-twolines-one-p-wrapped.md"
+            },
+            {
+                "input": "lists/ulist-twolines-p-wrapped.html",
+                "expected": "lists/ulist-twolines-p-wrapped.md"
+            },
+            {
+                "input": "lists/ulist-twolines.html",
+                "expected": "lists/ulist-twolines.md"
+            }
+        ]
+    },
+    {
+        "section": "markdown_doc",
+        "fixtures": [
+            {
+                "input": "markdown_doc/doc-amps-and-angles.html",
+                "expected": "markdown_doc/doc-amps-and-angles.md"
+            },
+            {
+                "input": "markdown_doc/doc-autolinks.html",
+                "expected": "markdown_doc/doc-autolinks.md"
+            },
+            {
+                "input": "markdown_doc/doc-basics.html",
+                "expected": "markdown_doc/doc-basics.md"
+            },
+            {
+                "input": "markdown_doc/doc-codeblocks.html",
+                "expected": "markdown_doc/doc-codeblocks.md"
+            },
+            {
+                "input": "markdown_doc/doc-double-quotes-in-text.html",
+                "expected": "markdown_doc/doc-double-quotes-in-text.md"
+            },
+            {
+                "input": "markdown_doc/doc-encoded-double-quotes-in-text.html",
+                "expected": "markdown_doc/doc-encoded-double-quotes-in-text.md"
+            },
+            {
+                "input": "markdown_doc/doc-quotes-in-text.html",
+                "expected": "markdown_doc/doc-quotes-in-text.md"
+            },
+            {
+                "input": "markdown_doc/doc-nested-blockquotes.html",
+                "expected": "markdown_doc/doc-nested-blockquotes.md"
+            }
+        ]
+    },
+    {
+        "section": "paragraph",
+        "fixtures": [
+            {
+                "input": "paragraph/oneline.html",
+                "expected": "paragraph/oneline.md"
+            },
+            {
+                "input": "paragraph/twolines.html",
+                "expected": "paragraph/twolines.md"
+            },
+            {
+                "input": "paragraph/unwrapped.html",
+                "expected": "paragraph/unwrapped.md"
+            },
+            {
+                "input": "paragraph/whitespace-before.html",
+                "expected": "paragraph/whitespace-before.md"
+            },
+            {
+                "input": "paragraph/whitespace-between.html",
+                "expected": "paragraph/whitespace-between.md"
+            },
+            {
+                "input": "paragraph/whitespace-inside.html",
+                "expected": "paragraph/whitespace-inside.md"
+            }
+        ]
+    },
+    {
+        "section": "pre",
+        "fixtures": [
+            {
+                "input": "pre/followed-by-p.html",
+                "expected": "pre/followed-by-p.md"
+            },
+            {
+                "input": "pre/list-wrapped.html",
+                "expected": "pre/list-wrapped.md"
+            },
+            {
+                "input": "pre/simple.html",
+                "expected": "pre/simple.md"
+            },
+            {
+                "input": "pre/twolines.html",
+                "expected": "pre/twolines.md"
+            }
+        ]
+    }
+]
