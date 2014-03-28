@@ -8,7 +8,7 @@ This library converts HTML documents to Markdown documents.
 
 The Markdown syntax does not offer a syntactic equivalent for every HTML tag, so this conversion is lossy.
 
-**upndown** is designed to offer a fast, reliable and whitespace perfect conversion for HTML document that are made up of elements that have an equivalent in the Markdown syntax, making it suited for Markdown WYSIWYG editors.
+**upndown** is designed to offer a fast, reliable and whitespace perfect conversion for HTML documents that are made up of elements that have an equivalent in the Markdown syntax, making it suited for Markdown WYSIWYG editors.
 
 ## Install / Usage
 
