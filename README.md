@@ -88,3 +88,8 @@ npm test
 ```
 
 Nodejs tests are executed using mocha.
+
+
+## Maintainer
+
+**upndown** is produced by [Net Gusto](http://netgusto.com). Drop us a line at <contact@netgusto.com>
