@@ -1,12 +1,12 @@
 {
   "name": "upndown",
-  "description": "Markdown to HTML converter",
+  "description": "HTML to Markdown converter",
   "version": "0.0.1",
   "keywords": [
     "markdown",
     "html",
     "html2markdown",
-    "htmltomarkdown",
+    "htmltomarkdown"
   ],
   "maintainers": [
     {
@@ -16,8 +16,15 @@
     }
   ],
   "dependencies": {
-    "htmlparser-jresig": "1.0.0",
+    "htmlparser-jresig": "1.0.1",
     "jsdom": "0.10.3"
+  },
+  "devDependencies": {
+    "mocha": "1.18.2",
+    "should": ">= 0.0.1"
+  },
+  "scripts": {
+    "test": "node_modules/.bin/mocha"
   },
   "repository": [
     {
