@@ -1,6 +1,6 @@
 # upndown
 
-Javascript Markdown to HTML converter, for Node.js and the browser.
+Javascript HTML to Markdown converter, for Node.js and the browser.
 
 ## About
 
