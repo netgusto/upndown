@@ -2,6 +2,8 @@
 
 Javascript HTML to Markdown converter, for Node.js and the browser.
 
+[Live demo of upndown here](http://upndown.netgusto.com/)
+
 ## About
 
 This library converts HTML documents to Markdown documents.
@@ -19,6 +21,7 @@ The Markdown syntax does not offer a syntactic equivalent for every HTML tag, so
 Download the zip archive on github, unzip, copy in your web folder, and in your HTML:
 
 ```html
+<script type="text/javascript" src="/assets/upndown/lib/htmlparser.min.js"></script>
 <script type="text/javascript" src="/assets/upndown/lib/upndown.min.js"></script>
 <script type="text/javascript">
 
@@ -41,6 +44,7 @@ Download the zip archive on github, unzip, copy in your web folder, and in your 
 require.config({
     paths: {
         'upndown': '/assets/upndown/lib/upndown.min'
+        'htmlparser': '/assets/upndown/lib/htmlparser.min'
     }
 });
  
