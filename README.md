@@ -2,7 +2,7 @@
 
 Javascript HTML to Markdown converter, for Node.js and the browser.
 
-[Live demo of upndown here](http://upndown.netgusto.com/)
+[Live demo here](http://upndown.netgusto.com/).
 
 ## About
 
