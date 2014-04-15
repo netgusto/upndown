@@ -238,6 +238,15 @@
         ]
     },
     {
+        "section": "html",
+        "fixtures": [
+            {
+                "input": "html/double-script.html",
+                "expected": "html/double-script.md"
+            }
+        ]
+    },
+    {
         "section": "images",
         "fixtures": [
             {
