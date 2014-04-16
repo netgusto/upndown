@@ -16,7 +16,7 @@
     }
   ],
   "dependencies": {
-    "htmlparser-jresig": "1.0.1",
+    "htmlparser-jresig": "1.0.2",
     "jsdom": "0.10.3",
     "mocha": "1.18.2",
     "should": ">= 0.0.1"

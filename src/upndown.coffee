@@ -69,20 +69,23 @@ do (
 
                     text = @unescape(node.data)
 
-                    if !(@hasParentOfType(node, 'code') && @isFirstChild(node)) && (!@isPreviousSiblingInline(node) || (@isFirstChild(node) && @hasParentOfType(node, 'li')))
+                    if text
 
-                        if text.match(/^[\n\s\t]+$/)
-                            return  # previous sibling is a block level element, and the text to be added is only whitespace, so we discard it
+                        if !(@hasParentOfType(node, 'code') && @isFirstChild(node)) && (!@isPreviousSiblingInline(node) || (@isFirstChild(node) && @hasParentOfType(node, 'li')))
 
-                        text = text.replace(/^[\s\t]*/, '') # left-trimming the text
+                            if text.match(/^[\n\s\t]+$/)
+                                return  # previous sibling is a block level element, and the text to be added is only whitespace, so we discard it
 
-                    if(!@hasParentOfType(node, 'pre') && !@hasParentOfType(node, 'code'))
-                        text = text.replace(/\n/g, ' ')
-                        text = text.replace(/[\s\t]+/g, ' ')
+                            text = text.replace(/^[\s\t]*/, '') # left-trimming the text
 
-                    prefix = ''
+                        if(!@hasParentOfType(node, 'pre') && !@hasParentOfType(node, 'code'))
+                            text = text.replace(/\n/g, ' ')
+                            text = text.replace(/[\s\t]+/g, ' ')
 
-                    @buffer[@currentdepth()].push(@escapeTextForMarkdown(node, text))
+                        @buffer[@currentdepth()].push(@escapeTextForMarkdown(node, text))
+                    
+                    else
+                        @buffer[@currentdepth()].push('')
 
                 @methods['open'] = {}
                 @methods['open']['_html'] = (node) =>
