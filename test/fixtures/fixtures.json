@@ -247,6 +247,14 @@
             {
                 "input": "html/double-script.html",
                 "expected": "html/double-script.md"
+            },
+            {
+                "input": "html/h1-iframe.html",
+                "expected": "html/h1-iframe.md"
+            },
+            {
+                "input": "html/quote-image.html",
+                "expected": "html/quote-image.md"
             }
         ]
     },
