@@ -26,15 +26,15 @@
         var und = new upndown();
 
         $.ajax('../fixtures/fixtures.json', {
+            dataType: 'json',
             success: function(fixturesindex) {
-                for(fixturesectionkey in fixturesindex) {
-                    var fixturesection = fixturesindex[fixturesectionkey];
+
+                $(fixturesindex).each(function(fixturesectionkey, fixturesection) {
 
                     (function(fsection) {
                         test(fsection.section, function() {
 
-                            for(fixturekey in fsection['fixtures']) {
-                                var fixture = fsection['fixtures'][fixturekey];
+                            $(fsection['fixtures']).each(function(fixturekey, fixture) {
 
                                 var input = false;
                                 var expected = false;
@@ -62,10 +62,11 @@
                                 }
 
                                 equal(und.convert(input), expected);
-                            }
+                            });
+
                         });
                     })(fixturesection);
-                }
+                });
 
                 QUnit.start(); //Tests loaded, run tests
             }

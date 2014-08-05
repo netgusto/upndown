@@ -23,6 +23,7 @@ do (
                 @prefixstack = {0: ''}
                 @currentollistack = []
                 @inlineelements = ['_text', 'strong', 'b', 'i', 'em', 'u', 'a', 'img', 'code']   # code is considered inline, as it's converted as backticks in markdown
+                @nonmarkdownblocklevelelement = ['div', 'iframe']
                 @tabindent = '    '
                 @textnodetype = 3
                 @documentnodetype = 9
@@ -93,7 +94,11 @@ do (
                         return
 
                     tag = node.tagName.toLowerCase()
+
                     htmltag = '<' + tag
+
+                    if @isNonMarkdownBlockLevelElement(tag) && !@isFirstChildNonText(node)
+                        htmltag = '\n' + htmltag
 
                     i = 0
                     while i < node.attributes.length
@@ -229,9 +234,12 @@ do (
                     if !@isFirstNodeNonText(node) && !@isFirstChildNonText(node)
                         nl += '\n'
                         nl += '\n'
-                            
 
-                    @buffer[depth-1].push(nl + html)
+                    postnl = ''
+                    if @isNextSiblingNonTextInline(node)
+                        postnl = '\n\n'
+
+                    @buffer[depth-1].push(nl + html + postnl)
 
                 @methods['close']['pre'] = (node) =>
                     depth = @currentdepth()
@@ -388,6 +396,7 @@ do (
                     alt = this.attrOrFalse('alt', node)
                     src = this.attrOrFalse('src', node)
                     title = this.attrOrFalse('title', node)
+
                     html = prefix + '![' + (if alt then alt else '') + '](' + (if src then src else '') + (if title then ' "' + title + '"' else '') + ')'
 
                     @buffer[depth-1].push(html)
@@ -526,8 +535,26 @@ do (
             isInline: (tag) =>
                 tag in @inlineelements
 
+            isNonMarkdownBlockLevelElement: (tag) =>
+                tag in @nonmarkdownblocklevelelement
+
             isPreviousSiblingInline: (node) =>
-                node && node.previousSibling && @isInline(node.previousSibling.tagName.toLowerCase())
+                node && node.previousSibling && node.previousSibling.tagName && @isInline(node.previousSibling.tagName.toLowerCase())
+
+            isPreviousSiblingBlock: (node) =>
+                node && node.previousSibling && node.previousSibling.tagName && !@isInline(node.previousSibling.tagName.toLowerCase())
+
+            isPreviousSiblingNonTextInline: (node) =>
+                if node
+                    previous = @previoussiblingnontext(node)
+
+                node && previous && @isInline(previous.tagName.toLowerCase())
+
+            isPreviousSiblingNonTextBlock: (node) =>
+                if node
+                    previous = @previoussiblingnontext(node)
+
+                node && previous && !@isInline(previous.tagName.toLowerCase())
 
             previoussiblingnontext: (node) =>
 
@@ -538,6 +565,24 @@ do (
                     break unless prevsibling and not @isFirstChildNonText(prevsibling)
 
                 return null
+
+            isNextSiblingInline: (node) =>
+                node && node.nextSibling && node.nextSibling.tagName && @isInline(node.nextSibling.tagName.toLowerCase())
+
+            isNextSiblingBlock: (node) =>
+                node && node.nextSibling && node.nextSibling.tagName && !@isInline(node.nextSibling.tagName.toLowerCase())
+
+            isNextSiblingNonTextInline: (node) =>
+                if node
+                    next = @nextsiblingnontext(node)
+
+                node && next && @isInline(next.tagName.toLowerCase())
+
+            isNextSiblingNonTextBlock: (node) =>
+                if node
+                    next = @previoussiblingnontext(node)
+
+                node && next && !@isInline(next.tagName.toLowerCase())
 
             nextsiblingnontext: (node) =>
 
