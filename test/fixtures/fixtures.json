@@ -241,6 +241,10 @@
         "section": "html",
         "fixtures": [
             {
+                "input": "html/attributes.html",
+                "expected": "html/attributes.md"
+            },
+            {
                 "input": "html/script.html",
                 "expected": "html/script.md"
             },

@@ -203,8 +203,7 @@ do (
 
                     nl = ''
                     if !@isFirstNodeNonText(node) && !@isFirstChildNonTextOfParentType(node, 'blockquote') && !(@hasParentOfType(node, 'li') && @isFirstChildNonText(node)) 
-                        nl += '\n'
-                        nl += '\n'
+                        nl += '\n\n'
 
                     html = prefix + @buffer[depth].join('').split('\n').join('\n' + prefix)
 
@@ -232,8 +231,7 @@ do (
 
                     nl = ''
                     if !@isFirstNodeNonText(node) && !@isFirstChildNonText(node)
-                        nl += '\n'
-                        nl += '\n'
+                        nl += '\n\n'
 
                     postnl = ''
                     if @isNextSiblingNonTextInline(node)
