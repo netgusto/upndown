@@ -35,5 +35,10 @@
       "name": "The MIT License (MIT)",
       "url": "https://github.com/netgusto/upndown/blob/master/LICENSE"
     }
-  ]
+  ],
+  "devDependencies": {
+    "pegjs": "^0.8.0",
+    "treehugger": "0.0.2",
+    "treehugger-node": "0.0.4"
+  }
 }

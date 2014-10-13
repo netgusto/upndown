@@ -2,7 +2,7 @@
 
 do (
     root = this,
-    factory = (htmlparser, jsdom) ->
+    factory = () ->
 
         #################################################
         class upndown
@@ -13,9 +13,6 @@ do (
             @currentollistack
             @inlineelements
             @tabindent
-            @textnodetype
-            @documentnodetype
-            @document
 
             setupParser: () =>
                 @depth = 0
@@ -25,13 +22,6 @@ do (
                 @inlineelements = ['_text', 'strong', 'b', 'i', 'em', 'u', 'a', 'img', 'code']   # code is considered inline, as it's converted as backticks in markdown
                 @nonmarkdownblocklevelelement = ['div', 'iframe']
                 @tabindent = '    '
-                @textnodetype = 3
-                @documentnodetype = 9
-
-                if jsdom
-                    @document = new jsdom()    # injected if nodejs (jsdom object), null otherwise
-                else
-                    @document = null
 
 
             constructor: () ->
@@ -51,7 +41,7 @@ do (
                             @depth--
                             prefix = @prefixstack_pop()
 
-                            level = parseInt(node.tagName.toLowerCase().substr(1))
+                            level = parseInt(node.name.toLowerCase().substr(1))
                             html = prefix + Array(level + 1).join('#') + ' ' + @buffer[depth].join('').split('\n').join('\n' + prefix)
 
                             nl = ''
@@ -90,10 +80,10 @@ do (
 
                 @methods['open'] = {}
                 @methods['open']['_html'] = (node) =>
-                    if(@isWrappingRootNode(node))
+                    if(@isDocumentNode(node))
                         return
 
-                    tag = node.tagName.toLowerCase()
+                    tag = node.name.toLowerCase()
 
                     htmltag = '<' + tag
 
@@ -102,7 +92,7 @@ do (
 
                     i = 0
                     while i < node.attributes.length
-                        htmltag += " " + node.attributes[i].name + '="' + node.attributes[i].nodeValue + '"'
+                        htmltag += " " + node.attributes[i].name + '="' + node.attributes[i].value + '"'
                         i++
 
                     htmltag += '>'
@@ -185,7 +175,7 @@ do (
                 @methods['close'] = {}
 
                 @methods['close']['_html'] = (node) =>
-                    if(@isWrappingRootNode(node))
+                    if(@isDocumentNode(node))
                         return
 
                     depth = @currentdepth()
@@ -194,7 +184,7 @@ do (
 
                     html = prefix + @buffer[depth].join('')
 
-                    @buffer[depth-1].push(html + '</' + node.tagName.toLowerCase() + '>')
+                    @buffer[depth-1].push(html + '</' + node.name.toLowerCase() + '>')
 
                 @methods['close']['p'] = (node) =>
                     depth = @currentdepth()
@@ -255,7 +245,7 @@ do (
 
                     prevsibling = @previoussiblingnontext(node)
                     
-                    if (prevsibling and (prevsibling.tagName.toLowerCase() == 'ul' or prevsibling.tagName.toLowerCase() == 'li')) || (@hasParentOfType(node, 'li'))
+                    if (prevsibling and (prevsibling.name.toLowerCase() == 'ul' or prevsibling.name.toLowerCase() == 'li')) || (@hasParentOfType(node, 'li'))
                         # We add another \n because markdown tends to nest a pre next to (or in) an li in the li
                         superextrapadding = '\n'
                     else
@@ -313,7 +303,7 @@ do (
                     else
                         puce = '*   '
 
-                    if !(@isFirstNodeNonText(node.parentNode) && @isFirstChildNonText(node)) && @hasPreviousSiblingNonTextOfType(node, 'li')
+                    if !(@isFirstNodeNonText(node.getParent()) && @isFirstChildNonText(node)) && @hasPreviousSiblingNonTextOfType(node, 'li')
                         nl = '\n'
                     else
                         nl = ''
@@ -412,8 +402,8 @@ do (
                 @depth
 
             parentTag: (node) =>
-                if node && node.parentNode && node.parentNode.nodeType != @documentnodetype
-                    node.parentNode
+                if node && node.getParent()
+                    node.getParent()
                 else
                     null
 
@@ -429,15 +419,15 @@ do (
                 @prefixstack[@currentdepth()] = ''
                 before
 
-            hasParentOfType: (node, tagname) =>
+            hasParentOfType: (node, name) =>
                 parent = @parentTag(node)
-                (parent && parent.tagName.toLowerCase() == tagname)
+                (parent && parent.name.toLowerCase() == name)
 
-            hasAncestorOfType: (node, tagname) =>
+            hasAncestorOfType: (node, name) =>
 
                 parent = @parentTag(node)
                 while parent
-                    return true if parent.tagName.toLowerCase() == tagname
+                    return true if parent.name.toLowerCase() == name
                     parent = @parentTag(parent)
 
                 false
@@ -466,18 +456,18 @@ do (
                 #   .replace(/\./g, escapeChar + '.')           # dot
                 #   .replace(/\!/g, escapeChar + '!')           # exclamation mark
 
-            convert: (html) =>
+            convert: (DOM) =>
                 @setupParser()
 
                 getNodeName = (node) ->
-                    if node.nodeType is 3
+                    if node.isTextNode()
                         "_text"
                     else
-                        node.tagName.toLowerCase()
+                        node.name.toLowerCase()
 
                 walkDOM = (node, cbktext, cbkopen, cbkexplore, cbkclose) ->
                     
-                    if node.nodeType is 3
+                    if node.isTextNode()
                         cbktext(node)
                     else
                         orignode = node
@@ -495,21 +485,16 @@ do (
 
                     return
 
-                if @document
-                    dom = HTMLtoDOM('<div id="hello">' + html + '</div>', @document)
-                else
-                    dom = HTMLtoDOM('<div id="hello">' + html + '</div>')
-
                 walkDOM(
-                    dom.getElementById("hello")
+                    DOM
                     , (node) =>
                         # text
                         @methods['_text'](node)
 
                     , (node) =>
                         # open
-                        if @methods.open[node.tagName.toLowerCase()]
-                            @methods.open[node.tagName.toLowerCase()](node)
+                        if @methods.open[node.name.toLowerCase()]
+                            @methods.open[node.name.toLowerCase()](node)
                         else
                             @methods.open['_html'](node)
 
@@ -518,8 +503,8 @@ do (
                         null
                     , (node) =>
                         # close
-                        if @methods.close[node.tagName.toLowerCase()]
-                            @methods.close[node.tagName.toLowerCase()](node)
+                        if @methods.close[node.name.toLowerCase()]
+                            @methods.close[node.name.toLowerCase()](node)
                         else
                             @methods.close['_html'](node)
 
@@ -537,74 +522,74 @@ do (
                 tag in @nonmarkdownblocklevelelement
 
             isPreviousSiblingInline: (node) =>
-                node && node.previousSibling && node.previousSibling.tagName && @isInline(node.previousSibling.tagName.toLowerCase())
+                node && node.previousSibling && node.previousSibling.name && @isInline(node.previousSibling.name.toLowerCase())
 
             isPreviousSiblingBlock: (node) =>
-                node && node.previousSibling && node.previousSibling.tagName && !@isInline(node.previousSibling.tagName.toLowerCase())
+                node && node.previousSibling && node.previousSibling.name && !@isInline(node.previousSibling.name.toLowerCase())
 
             isPreviousSiblingNonTextInline: (node) =>
                 if node
                     previous = @previoussiblingnontext(node)
 
-                node && previous && @isInline(previous.tagName.toLowerCase())
+                node && previous && @isInline(previous.name.toLowerCase())
 
             isPreviousSiblingNonTextBlock: (node) =>
                 if node
                     previous = @previoussiblingnontext(node)
 
-                node && previous && !@isInline(previous.tagName.toLowerCase())
+                node && previous && !@isInline(previous.name.toLowerCase())
 
             previoussiblingnontext: (node) =>
 
                 prevsibling = node
                 loop
                     prevsibling = prevsibling.previousSibling if prevsibling
-                    return prevsibling if prevsibling and prevsibling.nodeType isnt @textnodetype
+                    return prevsibling if prevsibling and not prevsibling.isTextNode()
                     break unless prevsibling and not @isFirstChildNonText(prevsibling)
 
                 return null
 
             isNextSiblingInline: (node) =>
-                node && node.nextSibling && node.nextSibling.tagName && @isInline(node.nextSibling.tagName.toLowerCase())
+                node && node.nextSibling && node.nextSibling.name && @isInline(node.nextSibling.name.toLowerCase())
 
             isNextSiblingBlock: (node) =>
-                node && node.nextSibling && node.nextSibling.tagName && !@isInline(node.nextSibling.tagName.toLowerCase())
+                node && node.nextSibling && node.nextSibling.name && !@isInline(node.nextSibling.name.toLowerCase())
 
             isNextSiblingNonTextInline: (node) =>
                 if node
                     next = @nextsiblingnontext(node)
 
-                node && next && @isInline(next.tagName.toLowerCase())
+                node && next && @isInline(next.name.toLowerCase())
 
             isNextSiblingNonTextBlock: (node) =>
                 if node
                     next = @previoussiblingnontext(node)
 
-                node && next && !@isInline(next.tagName.toLowerCase())
+                node && next && !@isInline(next.name.toLowerCase())
 
             nextsiblingnontext: (node) =>
 
                 nextsibling = node
                 loop
                     nextsibling = nextsibling.nextSibling if nextsibling
-                    return nextsibling if nextsibling and nextsibling.nodeType isnt @textnodetype
+                    return nextsibling if nextsibling and not nextsibling.isTextNode()
                     break unless nextsibling and not @isLastChildNonText(nextsibling)
 
                 return null
 
-            hasPreviousSiblingNonTextOfType: (node, tagname) =>
+            hasPreviousSiblingNonTextOfType: (node, name) =>
                 previoussiblingnontext = @previoussiblingnontext(node)
-                previoussiblingnontext && previoussiblingnontext.tagName.toLowerCase() == tagname
+                previoussiblingnontext && previoussiblingnontext.name.toLowerCase() == name
 
-            hasNextSiblingNonTextOfType: (node, tagname) =>
+            hasNextSiblingNonTextOfType: (node, name) =>
                 nextsiblingnontext = @nextsiblingnontext(node)
-                nextsiblingnontext && nextsiblingnontext.tagName.toLowerCase() == tagname
+                nextsiblingnontext && nextsiblingnontext.name.toLowerCase() == name
 
             firstChildNonText: (node) =>
 
                 i = 0
                 while i < node.childNodes.length
-                    return node.childNodes[i] if node.childNodes[i].nodeType isnt @textnodetype
+                    return node.childNodes[i] if not node.childNodes[i].isTextNode()
                     i++
 
                 return null
@@ -614,55 +599,55 @@ do (
                 return !(!!node && !!node.previousSibling)
 
             isFirstChildNonText: (node) =>
-                return node.parentNode && (@firstChildNonText(node.parentNode) == node)
+                return node.getParent() && (@firstChildNonText(node.getParent()) == node)
 
             hasFirstChildNonTextOfType: (node, childtype) =>
                 if !node || !node.firstChild
                     return null
 
-                return node.firstChild.tagName.toLowerCase() == childtype if node.firstChild.nodeType isnt @textnodetype
+                return node.firstChild.name.toLowerCase() == childtype if not node.firstChild.isTextNode()
                 
                 return @hasNextSiblingNonTextOfType(node.firstChild, childtype)
 
             isFirstChildNonTextOfParentType: (node, parenttype) =>
-                return @hasParentOfType(node, parenttype) && @firstChildNonText(node.parentNode) == node
+                return @hasParentOfType(node, parenttype) && @firstChildNonText(node.getParent()) == node
 
             isLastChild: (node) =>
                 return !(!!node.nextSibling)
 
             isLastChildNonText: (node) =>
-                return @isLastChild(node) || @lastChildNonText(node.parentNode) == node
+                return @isLastChild(node) || @lastChildNonText(node.getParent()) == node
 
             isLastChildNonTextUntilDepth0: (node) =>
                 
                 if !!!node
                     return false
 
-                if (node.parentNode && @isFirstNodeNonText(node.parentNode)) || @isFirstNodeNonText(node)
+                if (node.getParent() && @isFirstNodeNonText(node.getParent())) || @isFirstNodeNonText(node)
                     return true
 
                 if !@isLastChildNonText(node)
                     return false
 
-                return @isLastChildNonTextUntilDepth0(node.parentNode)
+                return @isLastChildNonTextUntilDepth0(node.getParent())
 
             isFirstNode: (node) =>
-                return !!node && @isFirstChild(node) && @isWrappingRootNode(node.parentNode)
+                return !!node && @isFirstChild(node) && @isDocumentNode(node.getParent())
 
             isFirstNodeNonText: (node) =>
-                return !!node && @isFirstChildNonText(node) && @isWrappingRootNode(node.parentNode)
+                return !!node && @isFirstChildNonText(node) && @isDocumentNode(node.getParent())
 
-            isWrappingRootNode: (node) =>
-                return node && node.nodeType != @textnodetype && node.tagName.toLowerCase() == 'div' && @attrOrFalse('id', node) == 'hello'
+            isDocumentNode: (node) =>
+                return node && node.isDocumentNode()
 
             hasLastChildOfType: (node, lastchildtype) =>
-                return node && node.lastChild && node.lastChild.tagName.toLowerCase() == lastchildtype
+                return node && node.lastChild && node.lastChild.name.toLowerCase() == lastchildtype
 
             hasLastChildNonTextOfType: (node, lastchildtype) =>
                 if !node || !node.lastChild
                     return null
 
-                return node.lastChild.tagName.toLowerCase() == lastchildtype if node.lastChild.nodeType isnt @textnodetype
+                return node.lastChild.name.toLowerCase() == lastchildtype if not node.lastChild.isTextNode()
                 
                 return @hasPreviousSiblingNonTextOfType(node.lastChild, lastchildtype)
 
@@ -670,28 +655,20 @@ do (
 
                 return null if !node || !node.lastChild
                 
-                return node.lastChild if node.lastChild.nodeType isnt @textnodetype
+                return node.lastChild if not node.lastChild.isTextNode()
 
                 return @previoussiblingnontext(node.lastChild)
 
             unescape: (html) =>
-                if @document
-                    e = @document.createElement('div')
-                else
-                    e = document.createElement('div')
-                
-                e.innerHTML = html
-                if e.childNodes.length == 0
-                    return ''
-                else
-                    return e.childNodes[0].nodeValue
+
+                return html
 
             ### Static methods under this line ###
 
             attrOrFalse: (attr, node) ->
                 i = 0
                 while i < node.attributes.length
-                    return node.attributes[i].nodeValue if node.attributes[i].name is attr
+                    return node.attributes[i].value if node.attributes[i].name is attr
                     i++
 
                 false
@@ -700,10 +677,8 @@ do (
         upndown
 ) ->
     if "object" is typeof exports
-        htmlparser = require 'htmlparser-jresig'
-        jsdom = require("jsdom").jsdom
 
-        module.exports = factory htmlparser, jsdom
+        module.exports = factory()
     else if define?.amd
         define ['htmlparser'], factory
     else
