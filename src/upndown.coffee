@@ -22,7 +22,7 @@ do (
                 @buffer = {0: []}
                 @prefixstack = {0: ''}
                 @currentollistack = []
-                @inlineelements = ['_text', 'strong', 'b', 'i', 'em', 'u', 'a', 'img', 'code']   # code is considered inline, as it's converted as backticks in markdown
+                @inlineelements = ['_text', 'strong', 'b', 'i', 'em', 'u', 'a', 'span', 'img', 'code']   # code is considered inline, as it's converted as backticks in markdown
                 @nonmarkdownblocklevelelement = ['div', 'iframe']
                 @tabindent = '    '
                 @textnodetype = 3
@@ -118,6 +118,12 @@ do (
                 @methods['open']['p'] = (node) =>
                     @standardmethods.open._default(node, '')
 
+                @methods['open']['div'] = (node) =>
+                    @standardmethods.open._default(node, '')
+
+                @methods['open']['span'] = (node) =>
+                    @standardmethods.open._default(node, '')
+
                 @methods['open']['br'] = (node) =>
                     @standardmethods.open._default(node, '')
 
@@ -208,6 +214,18 @@ do (
                     html = prefix + @buffer[depth].join('').split('\n').join('\n' + prefix)
 
                     @buffer[depth-1].push(nl + html)
+
+                @methods['close']['div'] = (node) =>
+                    @methods.close.br(node)
+
+                @methods['close']['span'] = (node) =>
+                    depth = @currentdepth()
+                    @depth--
+                    prefix = @prefixstack_pop()
+
+                    html = prefix + @buffer[depth].join('').split('\n').join('\n' + prefix)
+
+                    @buffer[depth-1].push(html)
 
                 @methods['close']['hr'] = (node) =>
                     depth = @currentdepth()
