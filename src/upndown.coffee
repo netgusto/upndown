@@ -216,7 +216,13 @@ do (
                     @buffer[depth-1].push(nl + html)
 
                 @methods['close']['div'] = (node) =>
-                    @methods.close.br(node)
+                    depth = @currentdepth()
+                    @depth--
+                    prefix = @prefixstack_pop()
+
+                    html = prefix + @buffer[depth].join('').split('\n').join('\n' + prefix)
+
+                    @buffer[depth-1].push(html + '\n')
 
                 @methods['close']['span'] = (node) =>
                     depth = @currentdepth()

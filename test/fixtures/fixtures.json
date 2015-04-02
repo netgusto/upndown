@@ -197,6 +197,10 @@
             {
                 "input": "divs/div.html",
                 "expected": "divs/div.md"
+            },
+            {
+                "input": "divs/divs.html",
+                "expected": "divs/divs.md"
             }
         ]
     },
@@ -206,6 +210,10 @@
             {
                 "input": "spans/span.html",
                 "expected": "spans/span.md"
+            },
+            {
+                "input": "spans/spans.html",
+                "expected": "spans/spans.md"
             }
         ]
     },
