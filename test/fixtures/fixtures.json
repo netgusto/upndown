@@ -192,6 +192,32 @@
         ]
     },
     {
+        "section": "divs",
+        "fixtures": [
+            {
+                "input": "divs/div.html",
+                "expected": "divs/div.md"
+            },
+            {
+                "input": "divs/divs.html",
+                "expected": "divs/divs.md"
+            }
+        ]
+    },
+    {
+        "section": "spans",
+        "fixtures": [
+            {
+                "input": "spans/span.html",
+                "expected": "spans/span.md"
+            },
+            {
+                "input": "spans/spans.html",
+                "expected": "spans/spans.md"
+            }
+        ]
+    },
+    {
         "section": "emphasis",
         "fixtures": [
             {
