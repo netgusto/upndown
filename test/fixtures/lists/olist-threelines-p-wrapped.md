@@ -1,5 +1,5 @@
-1.  Line one.
+1. Line one.
 
-2.  Line two.
+2. Line two.
 
-3.  Line three.
+3. Line three.

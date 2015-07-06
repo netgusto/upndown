@@ -2,9 +2,9 @@ First line of text.
 
 # Heading 1
 
-*   List item 1.
-*   List item 2.
-*   List item 3.
+* List item 1.
+* List item 2.
+* List item 3.
 
 Second line of text.
 
@@ -12,4 +12,4 @@ Second line of text.
 
 > blockquoted text
 
-*   List item 1.
+* List item 1.

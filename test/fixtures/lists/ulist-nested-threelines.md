@@ -1,4 +1,4 @@
-*   Line one.
+* Line one.
 
-    *   Line two.
-    *   Line three.
+    * Line two.
+    * Line three.

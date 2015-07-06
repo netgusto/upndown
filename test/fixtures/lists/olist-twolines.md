@@ -1,2 +1,2 @@
-1.  Line one.
-2.  Line two.
+1. Line one.
+2. Line two.

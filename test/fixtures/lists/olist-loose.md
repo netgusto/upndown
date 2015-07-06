@@ -1,7 +1,7 @@
 Ordered loose:
 
-1.  First
+1. First
 
-2.  Second
+2. Second
 
-3.  Third
+3. Third

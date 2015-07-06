@@ -1,1 +1,1 @@
-*   Line one.
+* Line one.

@@ -2,9 +2,9 @@ Link: <http://example.com/>.
 
 With an ampersand: <http://example.com/?foo=1&bar=2>
 
-*   In a list?
-*   <http://example.com/>
-*   It should.
+* In a list?
+* <http://example.com/>
+* It should.
 
 > Blockquoted: <http://example.com/>
 

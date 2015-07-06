@@ -1,2 +1,2 @@
-*   One
-*   Two
+* One
+* Two

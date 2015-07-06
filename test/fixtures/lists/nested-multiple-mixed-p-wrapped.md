@@ -1,11 +1,11 @@
 Same thing but with paragraphs:
 
-1.  First
+1. First
 
-2.  Second:
+2. Second:
 
-    *   Fee
-    *   Fie
-    *   Foe
+    * Fee
+    * Fie
+    * Foe
 
-3.  Third
+3. Third

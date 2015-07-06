@@ -1,10 +1,10 @@
 'use strict';
 
 var fs = require('fs');
-var upndown = require(__dirname + '/../lib/upndown.js');
+var upndown = require(__dirname + '/../lib/upndown.node.js');
+var assert = require("assert")
 
 var fixturesbasedir = __dirname + '/fixtures/';
-var und = new upndown();
 
 var fixturesjson = fs.readFileSync(fixturesbasedir + 'fixtures.json', 'utf8');
 var fixturesindex = JSON.parse(fixturesjson.toString());
@@ -19,16 +19,24 @@ for(fixturesectionkey in fixturesindex) {
         for(fixturekey in fixturesection['fixtures']) {
             var fixture = fixturesection['fixtures'][fixturekey];
 
+            var fixturetitle = fixture.input.split('/').pop().replace(/\.html$/, '');
             var input = fs.readFileSync(fixturesbasedir + fixture.input, 'utf8');
             var expected = fs.readFileSync(fixturesbasedir + fixture.expected, 'utf8');
 
-            var results = und.convert(input);
+            it(fixturetitle, (function(input, expected) {
 
-            var fixturetitle = fixture.input.split('/').pop().replace(/\.html$/, '');
+                return function(done) {
 
-            it(fixturetitle, function () {
-                results.should.equal(expected);
-            });
+                    var und = new upndown();
+                    und.convert(input, function(err, markdown) {
+                        if(err) { return done(e); }
+
+                        markdown.should.equal(expected);
+                        done();
+                    }, { keepHtml: true });
+                };
+
+            })(input, expected));
         }
     });
 }

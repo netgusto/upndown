@@ -6,11 +6,9 @@ Javascript HTML to Markdown converter, for Node.js and the browser.
 
 ## About
 
-This library converts HTML documents to Markdown documents.
+**upndown** converts HTML documents to Markdown documents.
 
-The Markdown syntax does not offer a syntactic equivalent for every HTML tag, so this conversion is lossy.
-
-**upndown** is designed to offer a fast, reliable and whitespace perfect conversion for HTML documents that are made up of elements that have an equivalent in the Markdown syntax, making it suited for Markdown WYSIWYG editors.
+**upndown** is designed to offer a fast, reliable and whitespace perfect conversion for HTML documents.
 
 ## Install / Usage
 
@@ -21,15 +19,15 @@ The Markdown syntax does not offer a syntactic equivalent for every HTML tag, so
 Download the zip archive on github, unzip, copy in your web folder, and in your HTML:
 
 ```html
-<script type="text/javascript" src="/assets/upndown/lib/htmlparser.min.js"></script>
-<script type="text/javascript" src="/assets/upndown/lib/upndown.min.js"></script>
+<script type="text/javascript" src="/assets/upndown/lib/upndown.bundle.min.js"></script>
 <script type="text/javascript">
 
     var und = new upndown();
-    var markdown = und.convert('<h1>Hello, World !</h1>');
-    
-    console.log(markdown); // Outputs: # Hello, World !
-    
+    und.convert('<h1>Hello, World !</h1>', function(err, markdown) {
+        if(err) { console.err(err);
+        else { console.log(markdown); } // Outputs: # Hello, World !
+    });
+
 </script>
 ```
 
@@ -43,16 +41,16 @@ Download the zip archive on github, unzip, copy in your web folder, and in your 
 
 require.config({
     paths: {
-        'upndown': '/assets/upndown/lib/upndown.min'
-        'htmlparser': '/assets/upndown/lib/htmlparser.min'
+        'upndown': '/assets/upndown/lib/upndown.bundle.min'
     }
 });
- 
+
 require(['upndown'], function(upndown) {
     var und = new upndown();
-    var markdown = und.convert('<h1>Hello, World !</h1>');
-    
-    console.log(markdown); // Outputs: # Hello, World !
+    und.convert('<h1>Hello, World !</h1>', function(err, markdown) {
+        if(err) { console.err(err);
+        else { console.log(markdown); } // Outputs: # Hello, World !
+    });
 });
 </script>
 ```
@@ -72,9 +70,10 @@ npm install upndown
 var upndown = require('upndown');
 
 var und = new upndown();
-var markdown = und.convert('<h1>Hello, World !</h1>');
-
-console.log(markdown); // Outputs: # Hello, World !
+und.convert('<h1>Hello, World !</h1>', function(err, markdown) {
+    if(err) { console.err(err);
+    else { console.log(markdown); } // Outputs: # Hello, World !
+});
 ```
 
 ## Test
@@ -92,7 +91,6 @@ npm test
 ```
 
 Nodejs tests are executed using mocha.
-
 
 ## Maintainer
 

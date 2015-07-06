@@ -1,1 +1,1 @@
-1.  Line one.
+1. Line one.

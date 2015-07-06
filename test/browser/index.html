@@ -4,23 +4,22 @@
 	<meta charset="utf-8">
 	<title>upndown testing zone</title>
 
-	<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.14.0.css">
-	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.14.0.js"></script>
+	<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.18.0.css">
+	<script type="text/javascript" src="https://code.jquery.com/qunit/qunit-1.18.0.js"></script>
 	<script type="text/javascript" src="http://requirejs.org/docs/release/2.1.11/minified/require.js"></script>
 
     <script type="text/javascript">
 
     require.config({
         paths: {
-            'htmlparser': '../../node_modules/htmlparser-jresig/htmlparser-lib/htmlparser',
-            'upndown': '../../lib/upndown',
+            'upndown': '../../lib/upndown.bundle.min',
             'jquery': 'https://code.jquery.com/jquery-2.1.0.min'
         }
     });
 
     // Main file for loading RequireJS necessary bits
     QUnit.config.autostart = false;
-     
+
     require(['jquery', 'upndown'], function($, upndown) {
 
         var und = new upndown();
@@ -32,9 +31,11 @@
                 $(fixturesindex).each(function(fixturesectionkey, fixturesection) {
 
                     (function(fsection) {
-                        test(fsection.section, function() {
+                        test(fsection.section, function(assert) {
 
                             $(fsection['fixtures']).each(function(fixturekey, fixture) {
+
+                                var done = assert.async();
 
                                 var input = false;
                                 var expected = false;
@@ -61,7 +62,11 @@
                                     throw new Exception('Fixture expected result "' + fixture.input + '" could not be loaded.');
                                 }
 
-                                equal(und.convert(input), expected);
+                                und.convert(input, function(err, markdown) {
+                                    if(err) { return done(err); }
+                                    assert.equal(markdown, expected);
+                                    done();
+                                }, { keepHtml: true });
                             });
 
                         });
