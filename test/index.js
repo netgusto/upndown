@@ -1,7 +1,7 @@
 'use strict';
 
 var fs = require('fs');
-var upndown = require(__dirname + '/../lib/upndown.node.js');
+var upndown = require(__dirname + '/../lib/upndownrec.node.js');
 var assert = require("assert")
 
 var fixturesbasedir = __dirname + '/fixtures/';

@@ -5,14 +5,9 @@ import htmlparser from 'htmlparser2';
 export default class upndown {
 
     init() {
-        this.depth = 0;
-
-        this.listnesting = 0;
-
         this.inlineelements = ['strong', 'b', 'i', 'em', 'u', 'a', 'img', 'code'];
-        this.semiblockelements = ['br'];
         this.nonmarkdownblocklevelelement = ['div', 'iframe', 'script'];
-        //this.tabindent = '  ';
+        this.tabindent = '    ';
     }
 
     parse(html, cbk) {
@@ -40,7 +35,7 @@ export default class upndown {
         this.init();
 
         try {
-            var markdown = this.walk(dom, { keepHtml }).trim();
+            var markdown = this.walk(dom, { keepHtml }).trim().replace(/•/g, ' ');
         } catch(err) {
             return cbk(err, null);
         }
@@ -57,7 +52,7 @@ export default class upndown {
             var markdown;
 
             if(node.type === 'tag' || node.type === 'script') {
-                if(node.name === 'ul') this.listnesting++;
+
                 var innerMarkdown = this.walk(node.children, options);
                 var method = 'wrap_' + node.name;
 
@@ -67,21 +62,15 @@ export default class upndown {
                     markdown = this.wrap_generic(node, innerMarkdown);
                 }
 
-                if(node.name === 'ul') this.listnesting--;
-
                 // Margins between block elements are collapsed into a single line
                 // pre-margins between an inline element and it's next sibling block are handled here also
                 // Block-level elements handle themselves their post-margin
                 // This is so because we're *descending* the dom tree :)
 
-                if(this.isBlock(node)) {
+                if(this.isBlock(node) && node.name !== 'br') {
                     var prevNonBlankText = this.previoussiblingnonblanktext(node);
-                    //if(prevNonBlankText) console.log({ type: prevNonBlankText.type, name: prevNonBlankText.name });
                     if(prevNonBlankText && !this.isBlock(prevNonBlankText)) {
-                        //var prevPrevNonBlankText = this.previoussiblingnonblanktext(prevNonBlankText);
-                        //if(!prevPrevNonBlankText || prevPrevNonBlankText.type !== 'tag' ||prevPrevNonBlankText.name !== 'br') {
-                            markdown = '\n' + markdown;
-                        //}
+                        markdown = '\n' + markdown;
                     }
                 }
             } else {
@@ -92,8 +81,6 @@ export default class upndown {
         }
 
         return buffer.join('');
-
-        //return this.buffer[0].join('').replace(/\s*$/, '').replace(/^[ \t]+$/gm, '').replace(/\n{3,}/gm, '\n\n\n').replace(/[\n| ]+$/, '').replace(/^\n+/, '');
     }
 
     // handlers
@@ -125,8 +112,8 @@ export default class upndown {
     }
 
     wrap_generic(node, markdown) {
-        //return '<' + node.name + '>\n' + markdown.replace(/^/gm, '\t') + '\n</' + node.name + '>';
-        return markdown;
+        return '<' + node.name + '>' + markdown.replace(/\s+/gm, ' ') + '</' + node.name + '>';
+        //return markdown;
     }
 
     // Block level elements
@@ -139,6 +126,9 @@ export default class upndown {
     wrap_h6(node, markdown) { return '\n###### ' + markdown + '\n'; }
 
     wrap_blockquote(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, '> ') + '\n'; }
+    wrap_pre(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, this.tabindent).replace(/\s/g, '•') + '\n'; }
+
+    wrap_code(node, markdown) { return '\n```\n' + markdown.trim() + '\n```\n'; }
 
     //wrap_ul(node, markdown) { return markdown.trim().replace(/^/gm, '* ') + '\n\n'; }
     wrap_ul(node, markdown) { return '\n' + markdown.trim() + '\n'; }
@@ -146,14 +136,16 @@ export default class upndown {
         var bullet = '* ';
         var firstChildNonText = this.firstChildNonText(node);
         if(firstChildNonText && this.isList(firstChildNonText)) {
-            bullet = '  ';
+            bullet = this.tabindent;
         }
-        return bullet + markdown.replace(/^/gm, '  ').trim() + '\n';
+        return bullet + markdown.replace(/^/gm, this.tabindent).trim() + '\n';
     }
 
     wrap_p(node, markdown) { return '\n' + markdown + '\n'; }
 
     wrap_br(node, markdown) { return '  \n'; }
+
+    wrap_hr(node, markdown) { return '\n* * *\n'; }
 
     // Inline elements
 
