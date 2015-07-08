@@ -1,0 +1,16 @@
+{
+    "env": {
+        "es6": true,
+        "node": true
+    },
+    "ecmaFeatures": {
+        "modules": true,
+        "classes": true
+    },
+    "rules": {
+        "space-unary-ops": 0,
+        "global-strict": 0,
+        "quotes": 0,
+        "camelcase": 0
+    }
+}
