@@ -7,7 +7,7 @@ var html = `
     <p>Hello, World !</p>
     <p>Hello, World !</p>
     <p>Hello, World !</p>
-    <ul>
+    <ol>
         <li><a href="http://netgusto.com" title="Super !">http://netgusto.com</a></li>
         <li><p>world</p></li>
         <li>
@@ -21,7 +21,7 @@ var html = `
                 <li>list item 2</li>
             </ul>
         </li>
-    </ul>
+    </ol>
     <ul>
         <li>super bien</li>
         <li>list item 2</li>

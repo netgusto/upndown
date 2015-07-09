@@ -5,8 +5,9 @@ import htmlparser from 'htmlparser2';
 export default class upndown {
 
     init() {
+        this.olstack = [];
         this.inlineelements = ['strong', 'b', 'i', 'em', 'u', 'a', 'img', 'code'];
-        this.nonmarkdownblocklevelelement = ['div', 'iframe', 'script'];
+        this.htmlblocklevelelement = ['div', 'iframe', 'script'];
         this.tabindent = '    ';
     }
 
@@ -95,13 +96,7 @@ export default class upndown {
         if(!text) { return ''; }
 
         // replace \n by spaces, right-trim
-        var res = text.replace('\n', ' ').replace(/\s+/g, ' ').replace(/\s*$/, '');
-
-        // if next node is inline (displayed on the same line, append space)
-        if(node.next && this.isInline(node.next)) {
-            // if next 
-            res += ' ';
-        }
+        var res = text.replace('\n', ' ').replace(/\s+/g, ' ');
 
         // if prev node is block (not displayed on the same line, left-trim)
         if(node.prev && this.isBlock(node.prev)) {
@@ -112,7 +107,13 @@ export default class upndown {
     }
 
     wrap_generic(node, markdown) {
-        return '<' + node.name + '>' + markdown.replace(/\s+/gm, ' ') + '</' + node.name + '>';
+        var htmlattribs = '';
+        var attrs = Object.keys(node.attribs);
+        for(var attrname of attrs) {
+            htmlattribs += " " + attrname + '="' + node.attribs[attrname] + '"';
+        }
+
+        return '<' + node.name + htmlattribs + '>' + markdown.replace(/\s+/gm, ' ') + '</' + node.name + '>' + (this.isHtmlBlockLevelElement(node.name) ? '\n' : '');
         //return markdown;
     }
 
@@ -128,12 +129,22 @@ export default class upndown {
     wrap_blockquote(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, '> ') + '\n'; }
     wrap_pre(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, this.tabindent).replace(/\s/g, '•') + '\n'; }
 
-    wrap_code(node, markdown) { return '\n```\n' + markdown.trim() + '\n```\n'; }
+    wrap_code(node, markdown) { return '`' + markdown.trim() + '`'; }
 
     //wrap_ul(node, markdown) { return markdown.trim().replace(/^/gm, '* ') + '\n\n'; }
     wrap_ul(node, markdown) { return '\n' + markdown.trim() + '\n'; }
+    wrap_ol(node, markdown) { this.olstack.pop(); return '\n' + markdown.trim() + '\n'; }
     wrap_li(node, markdown) {
+
         var bullet = '* ';
+
+        if(node.parent && node.parent.type === 'tag' && node.parent.name === 'ol') {
+            this.olstack.push
+            if(this.isFirstChildNonText(node)) { this.olstack.push(0); }
+            this.olstack[this.olstack.length - 1]++;
+            bullet = this.olstack[this.olstack.length - 1] + '. ';
+        }
+
         var firstChildNonText = this.firstChildNonText(node);
         if(firstChildNonText && this.isList(firstChildNonText)) {
             bullet = this.tabindent;
@@ -220,8 +231,8 @@ export default class upndown {
         return node.type === 'tag' && (node.name === 'ul' || node.name === 'li');
     }
 
-    isNonMarkdownBlockLevelElement(tag) {
-        return this.nonmarkdownblocklevelelement.indexOf(tag) >= 0;
+    isHtmlBlockLevelElement(tag) {
+        return this.htmlblocklevelelement.indexOf(tag) >= 0;
     }
 
     isPreviousSiblingInline(node) {
