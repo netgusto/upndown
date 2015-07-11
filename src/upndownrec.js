@@ -111,11 +111,11 @@ export default class upndown {
             }
         }
 
-        if(node.next && !this.isInline(node.next)) {
-            if(this.isInline(node.prev)) {
-                text = text.replace(/^\n+$/, ' ');    // trimming newlines (would be converted to untrimmed spaces otherwise)
+        if(node.next) {
+            if(this.isInline(node.next)) {
+                text = text.replace(/\n+$/, ' ');    // trimming newlines (would be converted to untrimmed spaces otherwise)
             } else {
-                text = text.replace(/^\n+$/, '');
+                text = text.replace(/\n+$/, '');
             }
         }
 
@@ -185,13 +185,21 @@ export default class upndown {
             bullet = this.olstack[this.olstack.length - 1] + '. ';
         }
 
-        var firstChildNonText = this.firstChildNonText(node);
-        if(firstChildNonText) {
-            if(this.isList(firstChildNonText)) {
-                //bullet = bullet;
-            } else if(this.isBlock(firstChildNonText)) {
+        var firstChildNonBlankText = this.firstChildNonBlankText(node);
+        if(firstChildNonBlankText) {
+            if(this.isList(firstChildNonBlankText)) {
+                bullet = this.tabindent;
+            } else if(this.isBlock(firstChildNonBlankText)) {
                 // p in li: add newline before
                 bullet = '\n' + bullet;
+            } else {
+                var prevsibling = this.previoussiblingnonblanktext(node);
+                if(
+                    prevsibling && prevsibling.type === 'tag' && prevsibling.name === 'li' &&
+                    this.isBlock(this.firstChildNonBlankText(prevsibling))
+                ) {
+                    bullet = '\n' + bullet;
+                }
             }
         }
 
@@ -262,19 +270,19 @@ export default class upndown {
     }
 
     isInline(node) {
-        return node.type === 'tag' && this.inlineelements.indexOf(node.name) >= 0;
+        return node && node.type === 'tag' && this.inlineelements.indexOf(node.name) >= 0;
     }
 
     isBlock(node) {
-        return (node && node.type === 'tag' || node.type === 'script') && !this.isInline(node);
+        return node && (node.type === 'tag' || node.type === 'script') && !this.isInline(node);
     }
 
     isText(node) {
-        return node.type === 'text';
+        return node && node.type === 'text';
     }
 
     isList(node) {
-        return node.type === 'tag' && (node.name === 'ul' || node.name === 'ol');
+        return node && node.type === 'tag' && (node.name === 'ul' || node.name === 'ol');
     }
 
     isHtmlBlockLevelElement(tag) {
@@ -426,6 +434,19 @@ export default class upndown {
 
         while (i < node.children.length) {
             if (node.children[i] && node.children[i].type !== 'text') {
+                return node.children[i];
+            }
+            i++;
+        }
+
+        return null;
+    }
+
+    firstChildNonBlankText(node) {
+        var i = 0;
+
+        while (i < node.children.length) {
+            if (node.children[i] && node.children[i].type !== 'text' || node.children[i].data.trim() !== '') {
                 return node.children[i];
             }
             i++;
