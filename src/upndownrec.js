@@ -52,8 +52,9 @@ export default class upndown {
 
             var markdown;
 
-            if(node.type === 'tag' || node.type === 'script') {
-
+            if(this.isText(node)) {
+                markdown = this.text(node);
+            } else {
                 var innerMarkdown = this.walk(node.children, options);
                 var method = 'wrap_' + node.name;
 
@@ -68,14 +69,17 @@ export default class upndown {
                 // Block-level elements handle themselves their post-margin
                 // This is so because we're *descending* the dom tree :)
 
-                if(this.isBlock(node) && node.name !== 'br') {
-                    var prevNonBlankText = this.previoussiblingnonblanktext(node);
-                    if(prevNonBlankText && !this.isBlock(prevNonBlankText)) {
-                        markdown = '\n' + markdown;
+                var prevNonBlankText = this.previoussiblingnonblanktext(node);
+                if(prevNonBlankText) {
+                    var isPrevNonBlankTextBlock = this.isBlock(prevNonBlankText);
+                    if(this.isInline(node)) {
+                        // current node is inline, previous was block : adding an extra new line
+                        if(isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
+                    } else if(node.name !== 'br' && !this.isList(node) && this.isBlock(node)) {
+                        // current node is block, previous was inline or text : adding an extra new line
+                        if(!isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
                     }
                 }
-            } else {
-                markdown = this.text(node);
             }
 
             buffer.push(markdown);
@@ -91,22 +95,53 @@ export default class upndown {
     }
 
     text(node) {
-        var text = this.unescape(node.data);
+        var text = node.data;
 
         if(!text) { return ''; }
 
-        // replace \n by spaces, right-trim
-        var res = text.replace('\n', ' ').replace(/\s+/g, ' ');
+        if(this.hasAncestorOfType(node, ['code', 'pre'])) { return text; }
 
-        // if prev node is block (not displayed on the same line, left-trim)
-        if(node.prev && this.isBlock(node.prev)) {
-            res = res.replace(/^\s*/, '');
+        // normalize whitespace
+
+        if(node.prev) {
+            if(this.isInline(node.prev)) {
+                text = text.replace(/^\n+/, ' ');    // trimming newlines (would be converted to untrimmed spaces otherwise)
+            } else {
+                text = text.replace(/^\n+/, '');
+            }
         }
 
-        return res;
+        if(node.next && !this.isInline(node.next)) {
+            if(this.isInline(node.prev)) {
+                text = text.replace(/^\n+$/, ' ');    // trimming newlines (would be converted to untrimmed spaces otherwise)
+            } else {
+                text = text.replace(/^\n+$/, '');
+            }
+        }
+
+        text = text
+            .replace('\n', ' ')         // converting inner newlines to spaces
+            .replace(/\s+/g, ' ');      // converting sequences of whitespace to single spaces
+
+        if(
+            // if prev node is block, this node is not displayed on the same line, so left-trim
+            (node.prev && this.isBlock(node.prev)) ||
+
+            // if current node is block, this node is not displayed on the same line either, so left-trim
+            (node.parent && this.isBlock(node.parent) && this.isFirstChild(node))
+        ) {
+            text = text.replace(/^\s*/, '');
+        }
+
+        if(node.parent && this.isBlock(node.parent) && this.isLastChild(node)) {
+            text = text.replace(/\s*$/, '');
+        }
+
+        return text;
     }
 
     wrap_generic(node, markdown) {
+
         var htmlattribs = '';
         var attrs = Object.keys(node.attribs);
         for(var attrname of attrs) {
@@ -127,9 +162,15 @@ export default class upndown {
     wrap_h6(node, markdown) { return '\n###### ' + markdown + '\n'; }
 
     wrap_blockquote(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, '> ') + '\n'; }
-    wrap_pre(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, this.tabindent).replace(/\s/g, '•') + '\n'; }
+    wrap_pre(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, this.tabindent).replace(/ /g, '•') + '\n'; }
 
-    wrap_code(node, markdown) { return '`' + markdown.trim() + '`'; }
+    wrap_code(node, markdown) {
+        if(this.hasAncestorOfType(node, ['pre'])) {
+            return markdown;
+        }
+
+        return '`' + markdown.trim() + '`';
+    }
 
     //wrap_ul(node, markdown) { return markdown.trim().replace(/^/gm, '* ') + '\n\n'; }
     wrap_ul(node, markdown) { return '\n' + markdown.trim() + '\n'; }
@@ -139,16 +180,21 @@ export default class upndown {
         var bullet = '* ';
 
         if(node.parent && node.parent.type === 'tag' && node.parent.name === 'ol') {
-            this.olstack.push
             if(this.isFirstChildNonText(node)) { this.olstack.push(0); }
             this.olstack[this.olstack.length - 1]++;
             bullet = this.olstack[this.olstack.length - 1] + '. ';
         }
 
         var firstChildNonText = this.firstChildNonText(node);
-        if(firstChildNonText && this.isList(firstChildNonText)) {
-            bullet = this.tabindent;
+        if(firstChildNonText) {
+            if(this.isList(firstChildNonText)) {
+                //bullet = bullet;
+            } else if(this.isBlock(firstChildNonText)) {
+                // p in li: add newline before
+                bullet = '\n' + bullet;
+            }
         }
+
         return bullet + markdown.replace(/^/gm, this.tabindent).trim() + '\n';
     }
 
@@ -193,11 +239,11 @@ export default class upndown {
         return node.parent && node.parent.name === tagname;
     }
 
-    hasAncestorOfType(node, tagname) {
+    hasAncestorOfType(node, tagnames) {
 
         let parent = node.parent;
         while (parent) {
-            if (parent.name === tagname) { return true; }
+            if (tagnames.indexOf(parent.name) > -1) { return true; }
             parent = parent.parent;
         }
 
@@ -207,7 +253,7 @@ export default class upndown {
     escapeTextForMarkdown(node, text) {
 
         var escapeChar;
-        if (this.hasAncestorOfType(node, 'code') || this.hasAncestorOfType(node, 'pre')) {
+        if (this.hasAncestorOfType(node, ['code', 'pre'])) {
             return text;
         }
 
@@ -220,7 +266,7 @@ export default class upndown {
     }
 
     isBlock(node) {
-        return (node.type === 'tag' || node.type === 'script') && !this.isInline(node);
+        return (node && node.type === 'tag' || node.type === 'script') && !this.isInline(node);
     }
 
     isText(node) {
@@ -228,7 +274,7 @@ export default class upndown {
     }
 
     isList(node) {
-        return node.type === 'tag' && (node.name === 'ul' || node.name === 'li');
+        return node.type === 'tag' && (node.name === 'ul' || node.name === 'ol');
     }
 
     isHtmlBlockLevelElement(tag) {
@@ -379,7 +425,7 @@ export default class upndown {
         var i = 0;
 
         while (i < node.children.length) {
-            if (node.children[i].type !== 'text') {
+            if (node.children[i] && node.children[i].type !== 'text') {
                 return node.children[i];
             }
             i++;
@@ -478,8 +524,6 @@ export default class upndown {
 
         return this.previoussiblingnontext(lastChild);
     }
-
-    unescape(html) { return '' + html; }
 
     attrOrFalse(attr, node) {
         if(attr in node.attribs) {

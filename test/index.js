@@ -29,7 +29,7 @@ for(fixturesectionkey in fixturesindex) {
 
                     var und = new upndown();
                     und.convert(input, function(err, markdown) {
-                        if(err) { return done(e); }
+                        if(err) { return done(err); }
 
                         markdown.should.equal(expected);
                         done();

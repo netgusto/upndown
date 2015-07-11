@@ -491,10 +491,6 @@
                 "expected": "pre/followed-by-p.md"
             },
             {
-                "input": "pre/list-wrapped.html",
-                "expected": "pre/list-wrapped.md"
-            },
-            {
                 "input": "pre/simple.html",
                 "expected": "pre/simple.md"
             },
