@@ -5,14 +5,11 @@ import htmlparser from 'htmlparser2';
 export default class upndown {
 
     init() {
-        this.depth = 0;
-        this.buffer = {0: []};
-        this.prefixstack = {0: ''};
-        this.currentollistack = [];
-
+        this.olstack = [];
         this.inlineelements = ['strong', 'b', 'i', 'em', 'u', 'a', 'img', 'code'];
-        this.nonmarkdownblocklevelelement = ['div', 'iframe', 'script'];
+        this.htmlblocklevelelement = ['div', 'iframe', 'script'];
         this.tabindent = '    ';
+        this.nbsp = '\u0000';
     }
 
     parse(html, cbk) {
@@ -39,428 +36,263 @@ export default class upndown {
     convertDom(dom, cbk, { keepHtml = false } = {}) {
         this.init();
 
-        try {
-            var markdown = this.walk(dom, { keepHtml });
-        } catch(err) {
-            return cbk(err, null);
-        }
-
-        return cbk(null, markdown);
+        this.walk(dom, { keepHtml })
+            .then(function(markdown) {
+                var regx = new RegExp(this.nbsp, 'g');
+                cbk(null, markdown.trim().replace(regx, ' '));
+            }.bind(this))
+            .catch(function(err) {
+                cbk(err, null);
+            });
     }
 
     walk(nodes, options) {
 
-        for(let node of nodes) {
-            if(node.type === 'tag' || node.type === 'script') {
-                let openmethod = 'open_' + node.name;
-                if(openmethod in this) { this[openmethod](node); }
-                else { if(options.keepHtml) { this.open_html(node); } }
+        return new Promise(function(topres, toprej) {
+            var promises = [];
 
-                this.walk(node.children, options);
+            for(let node of nodes) {
 
-                let closemethod = 'close_' + node.name;
-                if(closemethod in this) { this[closemethod](node); }
-                else { if(options.keepHtml) { this.close_html(node); } }
-            } else {
-                this.text(node);
+                promises.push(new Promise(((function(lenode) {
+                    return function(resolve, reject) {
+
+                        if(this.isText(lenode)) {
+                            resolve(this.text(lenode));
+                        } else {
+                            this.walk(lenode.children, options)
+                                .then(function(innerMarkdown) {
+
+                                    var markdown = '';
+                                    var method = 'wrap_' + lenode.name;
+
+                                    if(method in this) {
+                                        markdown = this[method](lenode, innerMarkdown);
+                                    } else {
+                                        if(options.keepHtml) {
+                                            markdown = this.wrap_generic(lenode, innerMarkdown);
+                                        } else {
+                                            markdown = innerMarkdown;
+                                        }
+                                    }
+
+                                    // Margins between block elements are collapsed into a single line
+                                    // pre-margins between an inline element and it's next sibling block are handled here also
+                                    // Block-level elements handle themselves their post-margin
+                                    // This is so because we're *descending* the dom tree :)
+
+                                    var prevNonBlankText = this.getPreviousSiblingNonBlankText(lenode);
+                                    if(prevNonBlankText) {
+                                        var isPrevNonBlankTextBlock = this.isBlock(prevNonBlankText);
+                                        if(this.isInline(lenode)) {
+                                            // current node is inline, previous was block : adding an extra new line
+                                            if(isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
+                                        } else if(lenode.name !== 'br' && !this.isList(lenode) && this.isBlock(lenode)) {
+                                            // current node is block, previous was inline or text : adding an extra new line
+                                            if(!isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
+                                        }
+                                    }
+
+                                    resolve(markdown);
+                                }.bind(this))
+                                .catch(function(err) { reject(err); });
+                        }
+                    }.bind(this);
+                }.bind(this))(node))));
             }
-        }
 
-        return this.buffer[0].join('').replace(/\s*$/, '').replace(/^[ \t]+$/gm, '').replace(/\n{3,}/gm, '\n\n\n').replace(/[\n| ]+$/, '').replace(/^\n+/, '');
+            Promise.all(promises)
+                .then(function(results) { topres(results.join('')); })
+                .catch(function(err) { toprej(err); });
+        }.bind(this));
     }
 
     // handlers
 
     text(node) {
-        var text = this.unescape(node.data);
-        if (text) {
-            if (!(this.hasParentOfType(node, 'code') && this.isFirstChild(node)) && (!this.isPreviousSiblingInline(node) || (this.isFirstChild(node) && this.hasParentOfType(node, 'li')))) {
-                if (text.match(/^[\n\s\t]+$/)) {
-                    return;
-                }
-                //text = text.replace(/^[\s\t]*/, '');
+        var text = node.data;
+
+        if(!text) { return ''; }
+
+        if(this.hasAncestorOfType(node, ['code', 'pre'])) { return text; }
+
+        // normalize whitespace
+
+        if(node.prev) {
+            if(this.isInline(node.prev)) {
+                text = text.replace(/^\n+/, ' ');    // trimming newlines (would be converted to untrimmed spaces otherwise)
+            } else {
+                text = text.replace(/^\n+/, '');
             }
-            if (!this.hasParentOfType(node, 'pre') && !this.hasParentOfType(node, 'code')) {
-                if (this.isNextSiblingBlock(node)) {
-                    text = text.replace(/\n+$/, '');
-                }
-                text = text.replace(/\n/g, ' ');
-                text = text.replace(/[\s\t]+/g, ' ');
-            }
-            this.buffer[this.depth].push(this.escapeTextForMarkdown(node, text));
-        } else {
-            this.buffer[this.depth].push('');
         }
+
+        if(node.next) {
+            if(this.isInline(node.next)) {
+                text = text.replace(/\n+$/, ' ');    // trimming newlines (would be converted to untrimmed spaces otherwise)
+            } else {
+                text = text.replace(/\n+$/, '');
+            }
+        }
+
+        text = text
+            .replace('\n', ' ')         // converting inner newlines to spaces
+            .replace(/\s+/g, ' ');      // converting sequences of whitespace to single spaces
+
+        if(
+            // if prev node is block, this node is not displayed on the same line, so left-trim
+            (node.prev && this.isBlock(node.prev)) ||
+
+            // if current node is block, this node is not displayed on the same line either, so left-trim
+            (node.parent && this.isBlock(node.parent) && this.isFirstChild(node))
+        ) {
+            text = text.replace(/^\s*/, '');
+        }
+
+        if(node.parent && this.isBlock(node.parent) && this.isLastChild(node)) {
+            text = text.replace(/\s*$/, '');
+        }
+
+        return text;
     }
 
-    open_html(node) {
+    wrap_generic(node, markdown) {
 
-        var htmltag, tag;
-
-        if (this.isWrappingRootNode(node)) {
-            return;
-        }
-
-        tag = node.name;
-
-        htmltag = '<' + tag;
-
-        if (this.isNonMarkdownBlockLevelElement(tag) && !this.isFirstChildNonText(node)) {
-            htmltag = '\n' + htmltag;
-            if(this.isPreviousSiblingBlock()) { htmltag = '\n' + htmltag; }
-        }
-
+        var htmlattribs = '';
         var attrs = Object.keys(node.attribs);
         for(var attrname of attrs) {
-            htmltag += " " + attrname + '="' + node.attribs[attrname] + '"';
+            htmlattribs += " " + attrname + '="' + node.attribs[attrname] + '"';
         }
 
-        htmltag += '>';
-        this.buffer[this.depth].push(htmltag);
-        this.prefixstack_push('');
-        this.depth++;
-
-        this.buffer[this.depth] = [];
+        return '<' + node.name + htmlattribs + '>' + markdown.replace(/\s+/gm, ' ') + '</' + node.name + '>' + (this.isHtmlBlockLevelElement(node.name) ? '\n' : '');
+        //return markdown;
     }
 
-    open_generic(node, prefix = '') {
-        this.prefixstack_push(prefix);
-        this.depth++;
-        this.buffer[this.depth] = [];
-    }
+    // Block level elements
 
-    open_blockquote(node) { this.open_generic(node, '> '); }
+    wrap_h1(node, markdown) { return '\n# ' + markdown + '\n'; }
+    wrap_h2(node, markdown) { return '\n## ' + markdown + '\n'; }
+    wrap_h3(node, markdown) { return '\n### ' + markdown + '\n'; }
+    wrap_h4(node, markdown) { return '\n#### ' + markdown + '\n'; }
+    wrap_h5(node, markdown) { return '\n##### ' + markdown + '\n'; }
+    wrap_h6(node, markdown) { return '\n###### ' + markdown + '\n'; }
 
-    open_pre(node) { this.open_generic(node, this.tabindent); }
+    wrap_blockquote(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, '> ') + '\n'; }
+    wrap_pre(node, markdown) { return '\n' + markdown.trim().replace(/^/gm, this.tabindent).replace(/ /g, this.nbsp) + '\n'; }
 
-    open_ol(node) {
-        this.currentollistack.push(1);
-        this.open_generic(node);
-    }
-
-    open_li(node) { this.open_generic(node, this.tabindent); }
-
-    open_h1(node) { this.open_generic(node); }
-    open_h2(node) { this.open_generic(node); }
-    open_h3(node) { this.open_generic(node); }
-    open_h4(node) { this.open_generic(node); }
-    open_h5(node) { this.open_generic(node); }
-    open_h6(node) { this.open_generic(node); }
-
-    open_strong(node) { this.open_generic(node); }
-    open_b(node) { this.open_generic(node); }
-    open_em(node) { this.open_generic(node); }
-    open_i(node) { this.open_generic(node); }
-    open_a(node) { this.open_generic(node); }
-    open_img(node) { this.open_generic(node); }
-    open_br(node) { this.open_generic(node); }
-
-    open_p(node) { this.open_generic(node); }
-    open_br(node) { this.open_generic(node); }
-    open_code(node) { this.open_generic(node); }
-    open_hr(node) { this.open_generic(node); }
-    open_ul(node) { this.open_generic(node); }
-
-    close_html(node) {
-        var depth, html, prefix;
-        if (this.isWrappingRootNode(node)) { return; }
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        html = prefix + this.buffer[depth].join('');
-
-        this.buffer[depth - 1].push(html + '</' + node.name + '>');
-    }
-
-    close_hx(node) {
-        var depth, html, level, nl, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        level = parseInt(node.name.substr(1));
-        html = prefix + Array(level + 1).join('#') + ' ' + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        nl = '';
-        if (!this.isFirstNodeNonText(node) && !this.isFirstChildNonText(node)) {
-            nl = '\n';
-            nl += '\n';
+    wrap_code(node, markdown) {
+        if(this.hasAncestorOfType(node, ['pre'])) {
+            return markdown;
         }
-        this.buffer[depth - 1].push(nl + html);
+
+        return '`' + markdown.trim() + '`';
     }
 
-    close_h1(node) { this.close_hx(node); }
-    close_h2(node) { this.close_hx(node); }
-    close_h3(node) { this.close_hx(node); }
-    close_h4(node) { this.close_hx(node); }
-    close_h5(node) { this.close_hx(node); }
-    close_h6(node) { this.close_hx(node); }
+    wrap_ul(node, markdown) { return '\n' + markdown.trim() + '\n'; }
+    wrap_ol(node, markdown) { return this.wrap_ul(node, markdown); }
+    wrap_li(node, markdown) {
 
-    close_p(node) {
-        var depth, html, nl, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        nl = '';
-        if (!this.isFirstNodeNonText(node) && !this.isFirstChildNonTextOfParentType(node, 'blockquote') && !(this.hasParentOfType(node, 'li') && this.isFirstChildNonText(node))) {
-            nl += '\n\n';
-        }
-        html = prefix + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        this.buffer[depth - 1].push(nl + html);
-    }
+        var bullet = '* ';
 
-    close_hr(node) {
-        var depth, html, nl, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        nl = '';
-        if (!this.isFirstNodeNonText(node)) {
-            nl = '\n\n';
-        }
-        html = prefix + nl + '* * *\n' + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        this.buffer[depth - 1].push(html);
-    }
+        if(node.parent && node.parent.type === 'tag' && node.parent.name === 'ol') {
+            let k = 1;
+            let n = node;
+            while(n.prev) {
+                if(n.prev.type === 'tag' && n.prev.name === 'li') { k++; }
+                n = n.prev;
+            }
 
-    close_blockquote(node) {
-        var depth, html, nl, postnl, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        html = prefix + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        nl = '';
-        if (!this.isFirstNodeNonText(node) && !this.isFirstChildNonText(node)) {
-            nl += '\n\n';
+            bullet = k + '. ';
         }
-        postnl = '';
-        if (this.isNextSiblingNonTextInline(node)) {
-            postnl = '\n\n';
-        }
-        this.buffer[depth - 1].push(nl + html + postnl);
-    }
 
-    close_pre(node) {
-        var beforenl, depth, html, prefix, prevsibling, superextrapadding;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        html = prefix + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        beforenl = '';
-        superextrapadding = '';
-        if (!this.isFirstNodeNonText(node)) {
-            beforenl = '\n\n';
-        }
-        prevsibling = this.previoussiblingnontext(node);
-        if ((prevsibling && (prevsibling.name === 'ul' || prevsibling.name === 'li')) || (this.hasParentOfType(node, 'li'))) {
-            superextrapadding = '\n';
-        } else {
-            superextrapadding = '';
-        }
-        this.buffer[depth - 1].push(superextrapadding + beforenl + html);
-    }
-
-    close_code(node) {
-        var begin, depth, end, html, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        if (!this.hasAncestorOfType(node, 'pre')) {
-            begin = '`';
-            end = '`';
-        } else {
-            begin = '';
-            end = '';
-        }
-        html = prefix + unescape(begin + this.buffer[depth].join('') + end).split('\n').join('\n' + prefix);
-        this.buffer[depth - 1].push(html);
-    }
-
-    close_ul(node) {
-        var depth, html, nl, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        nl = '';
-        if (!this.isFirstNodeNonText(node)) {
-            nl = '\n';
-            if ((!this.hasParentOfType(node, 'li') || this.hasPreviousSiblingNonTextOfType(node, 'p')) && (!this.hasParentOfType(node, 'blockquote') || !this.isFirstChildNonText(node))) {
-                nl += '\n';
+        var firstChildNonBlankText = this.getFirstChildNonBlankText(node);
+        if(firstChildNonBlankText) {
+            if(this.isList(firstChildNonBlankText)) {
+                bullet = this.tabindent;
+            } else if(this.isBlock(firstChildNonBlankText)) {
+                // p in li: add newline before
+                bullet = '\n' + bullet;
+            } else {
+                var prevsibling = this.getPreviousSiblingNonBlankText(node);
+                if(
+                    prevsibling && prevsibling.type === 'tag' && prevsibling.name === 'li' &&
+                    this.isBlock(this.getFirstChildNonBlankText(prevsibling))
+                ) {
+                    bullet = '\n' + bullet;
+                }
             }
         }
-        html = nl + prefix + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        this.buffer[depth - 1].push(html);
+
+        return bullet + markdown.replace(/^/gm, this.tabindent).trim() + '\n';
     }
 
-    close_ol(node) {
-        this.currentollistack.pop();
-        this.close_ul(node);
-    }
+    wrap_p(node, markdown) { return '\n' + markdown + '\n'; }
 
-    close_li(node) {
-        var currentolli, depth, html, nl, prefix, puce;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        if (this.hasParentOfType(node, 'ol')) {
-            currentolli = this.currentollistack[this.currentollistack.length - 1];
-            puce = currentolli + '.';
-            //puce += Array((4 - puce.length) + 1).join(' ');
-            puce += ' ';
-            this.currentollistack[this.currentollistack.length - 1]++;
-        } else {
-            puce = '* ';
+    wrap_br(/*node, markdown*/) { return '  \n'; }
+
+    wrap_hr(/*node, markdown*/) { return '\n* * *\n'; }
+
+    // Inline elements
+
+    wrap_strong(node, markdown) { return '**' + markdown + '**'; }
+    wrap_b(node, markdown) { return this.wrap_strong(node, markdown); }
+
+    wrap_em(node, markdown) { return '*' + markdown + '*'; }
+    wrap_i(node, markdown) { return this.wrap_em(node, markdown); }
+
+    wrap_a(node, markdown) {
+
+        var url = this.getAttrOrFalse('href', node);
+        var title = this.getAttrOrFalse('title', node);
+
+        if (url && url === markdown && (!title || title === '')) {
+            return '<' + url + '>';
+        } else if ((url === markdown || url.replace(/^mailto:/, '') === markdown) && (!title || title === '')) {
+            return '<' + url.replace(/^mailto:/, '') + '>';
         }
-        if (!(this.isFirstNodeNonText(node.parent) && this.isFirstChildNonText(node)) && this.hasPreviousSiblingNonTextOfType(node, 'li')) {
-            nl = '\n';
-        } else {
-            nl = '';
-        }
-        if (!this.isFirstChildNonText(node) && this.hasFirstChildNonTextOfType(node, 'p')) {
-            nl += '\n';
-        }
-        html = nl + puce + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        return this.buffer[depth - 1].push(html);
+
+        return '[' + markdown + '](' + (url ? url : '') + (title ? ' "' + title + '"' : '') + ')';
     }
 
-    close_strong(/*node*/) {
-        var depth, html, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        html = prefix + '**' + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        return this.buffer[depth - 1].push(html + '**');
-    }
-
-    close_b(node) { this.close_strong(node); }
-
-    close_em(/*node*/) {
-        var depth, html, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        html = prefix + '*' + this.buffer[depth].join('').split('\n').join('\n' + prefix) + '*';
-        return this.buffer[depth - 1].push(html);
-    }
-
-    close_i(node) { this.close_em(node); }
-
-    close_a(node) {
-        var depth, label, title, unescapedurl, url;
-        depth = this.depth;
-        this.depth--;
-        /*prefix = */this.prefixstack_pop();
-        url = this.attrOrFalse('href', node);
-        title = this.attrOrFalse('title', node);
-        label = this.buffer[depth].join('');
-        unescapedurl = this.unescape(url);
-        if (url && url === label && (!title || title === '')) {
-            this.buffer[depth - 1].push('<' + url + '>');
-        } else if ((unescapedurl === label || unescapedurl.replace(/^mailto:/, '') === label) && (!title || title === '')) {
-            this.buffer[depth - 1].push('<' + unescapedurl.replace(/^mailto:/, '') + '>');
-        } else {
-            this.buffer[depth - 1].push('[' + label + '](' + (url ? this.unescape(url) : '') + (title ? ' "' + this.unescape(title) + '"' : '') + ')');
-        }
-    }
-
-    close_img(node) {
-        var alt, depth, html, prefix, src, title;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        alt = this.attrOrFalse('alt', node);
-        src = this.attrOrFalse('src', node);
-        title = this.attrOrFalse('title', node);
-        html = prefix + '![' + (alt ? alt : '') + '](' + (src ? src : '') + (title ? ' "' + title + '"' : '') + ')';
-        return this.buffer[depth - 1].push(html);
-    }
-
-    close_br(/*node*/) {
-        var depth, html, prefix;
-        depth = this.depth;
-        this.depth--;
-        prefix = this.prefixstack_pop();
-        html = prefix + this.buffer[depth].join('').split('\n').join('\n' + prefix);
-        return this.buffer[depth - 1].push(html + '  \n');
+    wrap_img(node/*, markdown*/) {
+        var alt = this.getAttrOrFalse('alt', node);
+        var src = this.getAttrOrFalse('src', node);
+        var title = this.getAttrOrFalse('title', node);
+        return '![' + (alt ? alt : '') + '](' + (src ? src : '') + (title ? ' "' + title + '"' : '') + ')';
     }
 
     // helpers
 
-    getPrefix() {
-        if(this.depth in this.prefixstack) { return this.prefixstack[this.depth]; }
-        return '';
-    }
-
-    prefixstack_push(prefix) {
-        this.prefixstack[this.depth] = prefix;
-    }
-
-    prefixstack_pop(/*prefix*/) {
-        var before;
-        before = this.prefixstack[this.depth];
-        this.prefixstack[this.depth] = '';
-        return before;
-    }
-
-    hasParentOfType(node, tagname) {
-        return node.parent && node.parent.name === tagname;
-    }
-
-    hasAncestorOfType(node, tagname) {
+    hasAncestorOfType(node, tagnames) {
 
         let parent = node.parent;
         while (parent) {
-            if (parent.name === tagname) { return true; }
+            if (tagnames.indexOf(parent.name) > -1) { return true; }
             parent = parent.parent;
         }
 
         return false;
     }
 
-    escapeTextForMarkdown(node, text) {
-
-        var escapeChar;
-        if (this.hasAncestorOfType(node, 'code') || this.hasAncestorOfType(node, 'pre')) {
-            return text;
-        }
-
-        escapeChar = '\\';
-        return text.replace(/\\/g, escapeChar + escapeChar).replace(/`/g, escapeChar + '`').replace(/\#/g, escapeChar + '#');
+    isInline(node) {
+        return node && node.type === 'tag' && this.inlineelements.indexOf(node.name) >= 0;
     }
 
-    isInline(tag) {
-        return this.inlineelements.indexOf(tag) >= 0;
+    isBlock(node) {
+        return node && (node.type === 'tag' || node.type === 'script') && !this.isInline(node);
     }
 
-    isNonMarkdownBlockLevelElement(tag) {
-        return this.nonmarkdownblocklevelelement.indexOf(tag) >= 0;
+    isText(node) {
+        return node && node.type === 'text';
     }
 
-    isPreviousSiblingInline(node) {
-        return node && node.prev && node.prev.name && this.isInline(node.prev.name);
+    isList(node) {
+        return node && node.type === 'tag' && (node.name === 'ul' || node.name === 'ol');
     }
 
-    isPreviousSiblingBlock(node) {
-        return node && node.prev && node.prev.name && !this.isInline(node.prev.name);
+    isHtmlBlockLevelElement(tag) {
+        return this.htmlblocklevelelement.indexOf(tag) >= 0;
     }
 
-    isPreviousSiblingNonTextInline(node) {
-        var previous;
-
-        if (node) {
-            previous = this.previoussiblingnontext(node);
-        }
-
-        return node && previous && this.isInline(previous.name);
-    }
-
-    isPreviousSiblingNonTextBlock(node) {
-        var previous;
-        if (node) {
-            previous = this.previoussiblingnontext(node);
-        }
-
-        return node && previous && !this.isInline(previous.name);
-    }
-
-    previoussiblingnontext(node) {
+    getPreviousSiblingNonBlankText(node) {
 
         var prevsibling = node;
         var go = true;
@@ -471,7 +303,7 @@ export default class upndown {
                 prevsibling = prevsibling.prev;
             }
 
-            if (prevsibling && prevsibling.type !== 'text') {
+            if (prevsibling && (prevsibling.type !== 'text' || prevsibling.data.trim() !== '')) {
                 return prevsibling;
             }
 
@@ -483,78 +315,24 @@ export default class upndown {
         return null;
     }
 
-    isNextSiblingInline(node) {
-        return node && node.next && node.next.name && this.isInline(node.next.name);
-    }
+    getFirstChildNonText(node) {
+        var i = 0;
 
-    isNextSiblingBlock(node) {
-        return node && node.next && node.next.name && !this.isInline(node.next.name);
-    }
-
-    isNextSiblingNonTextInline(node) {
-        var next;
-
-        if (node) { next = this.nextsiblingnontext(node); }
-
-        return node && next && this.isInline(next.name);
-    }
-
-    isNextSiblingNonTextBlock(node) {
-        var next;
-        if (node) { next = this.previoussiblingnontext(node); }
-        return node && next && !this.isInline(next.name);
-    }
-
-    nextsiblingnontext(node) {
-
-        var nextsibling = node;
-        var go = true;
-
-        while (go) {
-
-            if (nextsibling) {
-                nextsibling = nextsibling.next;
+        while (i < node.children.length) {
+            if (node.children[i] && node.children[i].type !== 'text') {
+                return node.children[i];
             }
-
-            if (nextsibling && nextsibling.type !== 'text') {
-                return nextsibling;
-            }
-
-            if (!(nextsibling && !this.isLastChildNonText(nextsibling))) {
-                break;
-            }
+            i++;
         }
 
         return null;
     }
 
-    hasPreviousSiblingNonTextOfType(node, tagname) {
-        var previoussiblingnontext = this.previoussiblingnontext(node);
-        return previoussiblingnontext && previoussiblingnontext.name === tagname;
-    }
-
-    hasNextSiblingNonTextOfType(node, tagname) {
-        var nextsiblingnontext = this.nextsiblingnontext(node);
-        return nextsiblingnontext && nextsiblingnontext.name === tagname;
-    }
-
-    firstChild(node) {
-        if(!node) { return null; }
-        if(!node.children.length) { return null; }
-        return node.children[0];
-    }
-
-    lastChild(node) {
-        if(!node) { return null; }
-        if(!node.children.length) { return null; }
-        return node.children[(node.children.length - 1)];
-    }
-
-    firstChildNonText(node) {
+    getFirstChildNonBlankText(node) {
         var i = 0;
 
         while (i < node.children.length) {
-            if (node.children[i].type !== 'text') {
+            if (node.children[i] && node.children[i].type !== 'text' || node.children[i].data.trim() !== '') {
                 return node.children[i];
             }
             i++;
@@ -569,94 +347,14 @@ export default class upndown {
     }
 
     isFirstChildNonText(node) {
-        return node.parent && (this.firstChildNonText(node.parent) === node);
-    }
-
-    hasFirstChildNonTextOfType(node, childtype) {
-
-        var firstChild = this.firstChild(node);
-
-        if (!node || !firstChild) { return null; }
-
-        if (firstChild.type !== 'text') {
-            return firstChild.name === childtype;
-        }
-
-        return this.hasNextSiblingNonTextOfType(firstChild, childtype);
-    }
-
-    isFirstChildNonTextOfParentType(node, parenttype) {
-        return this.hasParentOfType(node, parenttype) && this.firstChildNonText(node.parent) === node;
+        return node.parent && (this.getFirstChildNonText(node.parent) === node);
     }
 
     isLastChild(node) {
         return !(node.next);
     }
 
-    isLastChildNonText(node) {
-        return this.isLastChild(node) || this.lastChildNonText(node.parent) === node;
-    }
-
-    isLastChildNonTextUntilDepth0(node) {
-        if (!node) {
-            return false;
-        }
-
-        if ((node.parent && this.isFirstNodeNonText(node.parent)) || this.isFirstNodeNonText(node)) {
-            return true;
-        }
-
-        if (!this.isLastChildNonText(node)) {
-            return false;
-        }
-
-        return this.isLastChildNonTextUntilDepth0(node.parent);
-    }
-
-    isFirstNode(node) {
-        return !!node && this.isFirstChild(node) && this.isWrappingRootNode(node.parent);
-    }
-
-    isFirstNodeNonText(node) {
-        return !!node && this.isFirstChildNonText(node) && this.isWrappingRootNode(node.parent);
-    }
-
-    isWrappingRootNode(node) {
-        return node && node.type !== 'text' && node.name === 'div' && this.attrOrFalse('id', node) === 'hello';
-    }
-
-    hasLastChildOfType(node, lastchildtype) {
-        var lastChild = this.lastChild(node);
-        return node && lastChild && lastChild.name === lastchildtype;
-    }
-
-    hasLastChildNonTextOfType(node, lastchildtype) {
-
-        var lastChild = this.lastChild(node);
-
-        if (!node || !lastChild) { return null; }
-
-        if (lastChild.type !== 'text') {
-            return lastChild.name === lastchildtype;
-        }
-
-        return this.hasPreviousSiblingNonTextOfType(lastChild, lastchildtype);
-    }
-
-    lastChildNonText(node) {
-
-        var lastChild = this.lastChild(node);
-
-        if (!node || !lastChild) { return null; }
-
-        if (lastChild.type !== 'text') { return lastChild; }
-
-        return this.previoussiblingnontext(lastChild);
-    }
-
-    unescape(html) { return '' + html; }
-
-    attrOrFalse(attr, node) {
+    getAttrOrFalse(attr, node) {
         if(attr in node.attribs) {
             return node.attribs[attr];
         }

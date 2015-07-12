@@ -1,7 +1,7 @@
 {
   "name": "upndown",
   "description": "HTML to Markdown converter",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "keywords": [
     "markdown",
     "html",
@@ -24,8 +24,8 @@
   "scripts": {
     "test": "node node_modules/.bin/mocha",
     "lint": "node node_modules/.bin/eslint src/upndown.js",
-    "compile": "node node_modules/.bin/babel src/upndownrec.js > lib/upndownrec.node.js",
-    "browserify": "node node_modules/.bin/browserify lib/upndownrec.node.js -s upndown > lib/upndownrec.bundle.js",
+    "compile": "node node_modules/.bin/babel src/upndown.js > lib/upndown.node.js",
+    "browserify": "node node_modules/.bin/browserify lib/upndown.node.js -s upndown > lib/upndown.bundle.js",
     "uglify": "node node_modules/.bin/uglifyjs lib/upndown.bundle.js --compress --mangle  -s upndown > lib/upndown.bundle.min.js",
     "build": "npm run lint && npm run compile && npm run test && npm run browserify && npm run uglify"
   },

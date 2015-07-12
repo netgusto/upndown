@@ -11,6 +11,7 @@
         "space-unary-ops": 0,
         "global-strict": 0,
         "quotes": 0,
-        "camelcase": 0
+        "camelcase": 0,
+	"no-loop-func": 0
     }
 }
