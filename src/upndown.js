@@ -13,12 +13,12 @@ export default class upndown {
     }
 
     parse(html, cbk) {
-        var handler = new htmlparser.DomHandler(function(err, dom) {
+        let handler = new htmlparser.DomHandler(function(err, dom) {
             if(err) { return cbk(err, null); }
             return cbk(null, dom);
         }, { withDomLvl1: false, withStartIndices: false });
 
-        var p = new htmlparser.Parser(handler, { decodeEntities: true });
+        let p = new htmlparser.Parser(handler, { decodeEntities: true });
         p.write(html);
         p.end();
     }
@@ -36,9 +36,10 @@ export default class upndown {
     convertDom(dom, cbk, { keepHtml = false } = {}) {
         this.init();
 
-        this.walk(dom, { keepHtml })
+        this.walkNodes(dom, { keepHtml })
             .then(function(markdown) {
-                var regx = new RegExp(this.nbsp, 'g');
+                if(!markdown) { markdown = ''; }
+                let regx = new RegExp(this.nbsp, 'g');
                 cbk(null, markdown.trim().replace(regx, ' '));
             }.bind(this))
             .catch(function(err) {
@@ -46,70 +47,71 @@ export default class upndown {
             });
     }
 
-    walk(nodes, options) {
+    walkNodes(nodes, options) {
+
+        let self = this;
 
         return new Promise(function(topres, toprej) {
-            var promises = [];
-
-            for(let node of nodes) {
-
-                promises.push(new Promise(((function(lenode) {
-                    return function(resolve, reject) {
-
-                        if(this.isText(lenode)) {
-                            resolve(this.text(lenode));
-                        } else {
-                            this.walk(lenode.children, options)
-                                .then(function(innerMarkdown) {
-
-                                    var markdown = '';
-                                    var method = 'wrap_' + lenode.name;
-
-                                    if(method in this) {
-                                        markdown = this[method](lenode, innerMarkdown);
-                                    } else {
-                                        if(options.keepHtml) {
-                                            markdown = this.wrap_generic(lenode, innerMarkdown);
-                                        } else {
-                                            markdown = innerMarkdown;
-                                        }
-                                    }
-
-                                    // Margins between block elements are collapsed into a single line
-                                    // pre-margins between an inline element and it's next sibling block are handled here also
-                                    // Block-level elements handle themselves their post-margin
-                                    // This is so because we're *descending* the dom tree :)
-
-                                    var prevNonBlankText = this.getPreviousSiblingNonBlankText(lenode);
-                                    if(prevNonBlankText) {
-                                        var isPrevNonBlankTextBlock = this.isBlock(prevNonBlankText);
-                                        if(this.isInline(lenode)) {
-                                            // current node is inline, previous was block : adding an extra new line
-                                            if(isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
-                                        } else if(lenode.name !== 'br' && !this.isList(lenode) && this.isBlock(lenode)) {
-                                            // current node is block, previous was inline or text : adding an extra new line
-                                            if(!isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
-                                        }
-                                    }
-
-                                    resolve(markdown);
-                                }.bind(this))
-                                .catch(function(err) { reject(err); });
-                        }
-                    }.bind(this);
-                }.bind(this))(node))));
+            let promises = [];
+            for(let nodekey in nodes) {
+                promises.push(new Promise(function(resolve, reject) { self.walkNode(resolve, reject, options, nodes[nodekey]); }));
             }
 
             Promise.all(promises)
                 .then(function(results) { topres(results.join('')); })
                 .catch(function(err) { toprej(err); });
-        }.bind(this));
+        }).catch(function(err) { throw err; });
+    }
+
+    walkNode(resolve, reject, options, lenode) {
+        if(this.isText(lenode)) {
+            resolve(this.text(lenode));
+        } else {
+            this.walkNodes(lenode.children, options)
+                .then(function(innerMarkdown) { this.wrapNode(resolve, reject, options, lenode, innerMarkdown); }.bind(this))
+                .catch(function(err) { reject(err); });
+        }
+    }
+
+    wrapNode(resolve, reject, options, lenode, innerMarkdown) {
+
+        let markdown = '';
+        let method = 'wrap_' + lenode.name;
+
+        if(method in this) {
+            markdown = this[method](lenode, innerMarkdown);
+        } else {
+            if(options.keepHtml) {
+                markdown = this.wrap_generic(lenode, innerMarkdown);
+            } else {
+                markdown = innerMarkdown;
+            }
+        }
+
+        // Collapsing margins between block elements into a single line.
+        // Pre-margins between an inline element and it's next sibling block are handled here also
+        // Block-level elements handle themselves their post-margin
+        // This is so because we're *descending* the dom tree :)
+
+        let prevNonBlankText = this.getPreviousSiblingNonBlankText(lenode);
+        if(prevNonBlankText) {
+            let isPrevNonBlankTextBlock = this.isBlock(prevNonBlankText);
+            if(this.isInline(lenode)) {
+                // current node is inline, previous was block : adding an extra new line
+                if(isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
+            } else if(lenode.name !== 'br' && !this.isList(lenode) && this.isBlock(lenode)) {
+                // current node is block, previous was inline or text : adding an extra new line
+                if(!isPrevNonBlankTextBlock) { markdown = '\n' + markdown; }
+            }
+        }
+
+        resolve(markdown);
     }
 
     // handlers
 
     text(node) {
-        var text = node.data;
+        let text = node.data;
 
         if(!text) { return ''; }
 
@@ -156,10 +158,10 @@ export default class upndown {
 
     wrap_generic(node, markdown) {
 
-        var htmlattribs = '';
-        var attrs = Object.keys(node.attribs);
-        for(var attrname of attrs) {
-            htmlattribs += " " + attrname + '="' + node.attribs[attrname] + '"';
+        let htmlattribs = '';
+        let attrs = Object.keys(node.attribs);
+        for(let attrnamekey in attrs) {
+            htmlattribs += " " + attrs[attrnamekey] + '="' + node.attribs[attrs[attrnamekey]] + '"';
         }
 
         return '<' + node.name + htmlattribs + '>' + markdown.replace(/\s+/gm, ' ') + '</' + node.name + '>' + (this.isHtmlBlockLevelElement(node.name) ? '\n' : '');
@@ -190,7 +192,7 @@ export default class upndown {
     wrap_ol(node, markdown) { return this.wrap_ul(node, markdown); }
     wrap_li(node, markdown) {
 
-        var bullet = '* ';
+        let bullet = '* ';
 
         if(node.parent && node.parent.type === 'tag' && node.parent.name === 'ol') {
             let k = 1;
@@ -203,7 +205,7 @@ export default class upndown {
             bullet = k + '. ';
         }
 
-        var firstChildNonBlankText = this.getFirstChildNonBlankText(node);
+        let firstChildNonBlankText = this.getFirstChildNonBlankText(node);
         if(firstChildNonBlankText) {
             if(this.isList(firstChildNonBlankText)) {
                 bullet = this.tabindent;
@@ -211,7 +213,7 @@ export default class upndown {
                 // p in li: add newline before
                 bullet = '\n' + bullet;
             } else {
-                var prevsibling = this.getPreviousSiblingNonBlankText(node);
+                let prevsibling = this.getPreviousSiblingNonBlankText(node);
                 if(
                     prevsibling && prevsibling.type === 'tag' && prevsibling.name === 'li' &&
                     this.isBlock(this.getFirstChildNonBlankText(prevsibling))
@@ -240,8 +242,8 @@ export default class upndown {
 
     wrap_a(node, markdown) {
 
-        var url = this.getAttrOrFalse('href', node);
-        var title = this.getAttrOrFalse('title', node);
+        let url = this.getAttrOrFalse('href', node);
+        let title = this.getAttrOrFalse('title', node);
 
         if (url && url === markdown && (!title || title === '')) {
             return '<' + url + '>';
@@ -253,9 +255,9 @@ export default class upndown {
     }
 
     wrap_img(node/*, markdown*/) {
-        var alt = this.getAttrOrFalse('alt', node);
-        var src = this.getAttrOrFalse('src', node);
-        var title = this.getAttrOrFalse('title', node);
+        let alt = this.getAttrOrFalse('alt', node);
+        let src = this.getAttrOrFalse('src', node);
+        let title = this.getAttrOrFalse('title', node);
         return '![' + (alt ? alt : '') + '](' + (src ? src : '') + (title ? ' "' + title + '"' : '') + ')';
     }
 
@@ -294,8 +296,8 @@ export default class upndown {
 
     getPreviousSiblingNonBlankText(node) {
 
-        var prevsibling = node;
-        var go = true;
+        let prevsibling = node;
+        let go = true;
 
         while (go) {
 
@@ -316,7 +318,7 @@ export default class upndown {
     }
 
     getFirstChildNonText(node) {
-        var i = 0;
+        let i = 0;
 
         while (i < node.children.length) {
             if (node.children[i] && node.children[i].type !== 'text') {
@@ -329,7 +331,7 @@ export default class upndown {
     }
 
     getFirstChildNonBlankText(node) {
-        var i = 0;
+        let i = 0;
 
         while (i < node.children.length) {
             if (node.children[i] && node.children[i].type !== 'text' || node.children[i].data.trim() !== '') {
