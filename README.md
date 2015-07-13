@@ -2,6 +2,8 @@
 
 Javascript HTML to Markdown converter, for Node.js and the browser.
 
+[![](https://travis-ci.org/netgusto/upndown.svg?branch=master)](https://travis-ci.org/netgusto/upndown)
+
 [Live demo here](http://upndown.netgusto.com/).
 
 ## About
