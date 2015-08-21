@@ -297,6 +297,10 @@
             {
                 "input": "links/withtitle.html",
                 "expected": "links/withtitle.md"
+            },
+            {
+                "input": "links/withouthref.html",
+                "expected": "links/withouthref.md"
             }
         ]
     },
