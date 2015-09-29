@@ -245,7 +245,9 @@ export default class upndown {
         let url = this.getAttrOrFalse('href', node);
         let title = this.getAttrOrFalse('title', node);
 
-        if (url && url === markdown && (!title || title === '')) {
+        if (!url) {
+            return markdown;
+        } else if (url && url === markdown && (!title || title === '')) {
             return '<' + url + '>';
         } else if ((url === markdown || url.replace(/^mailto:/, '') === markdown) && (!title || title === '')) {
             return '<' + url.replace(/^mailto:/, '') + '>';

@@ -3,16 +3,17 @@
   "description": "HTML to Markdown converter",
   "version": "2.0.2",
   "keywords": [
-    "markdown",
     "html",
     "html2markdown",
-    "htmltomarkdown"
+    "htmltomarkdown",
+    "markdown"
   ],
   "dependencies": {
     "htmlparser2": "^3.8.3"
   },
   "devDependencies": {
     "babel": "^5.6.14",
+    "babel-eslint": "^4.0.10",
     "browserify": "^10.2.4",
     "chai": "^3.0.0",
     "eslint": "^0.24.0",
@@ -22,12 +23,12 @@
   },
   "main": "./lib/upndown.node.js",
   "scripts": {
-    "test": "node node_modules/.bin/mocha",
-    "lint": "node node_modules/.bin/eslint src/upndown.js",
-    "compile": "node node_modules/.bin/babel src/upndown.js > lib/upndown.node.js",
     "browserify": "node node_modules/.bin/browserify lib/upndown.node.js -s upndown > lib/upndown.bundle.js",
-    "uglify": "node node_modules/.bin/uglifyjs lib/upndown.bundle.js --compress --mangle  -s upndown > lib/upndown.bundle.min.js",
-    "build": "npm run lint && npm run compile && npm run test && npm run browserify && npm run uglify"
+    "build": "npm run lint && npm run compile && npm run test && npm run browserify && npm run uglify",
+    "compile": "node node_modules/.bin/babel src/upndown.js > lib/upndown.node.js",
+    "lint": "node node_modules/.bin/eslint src/upndown.js",
+    "test": "node node_modules/.bin/mocha",
+    "uglify": "node node_modules/.bin/uglifyjs lib/upndown.bundle.js --compress --mangle  -s upndown > lib/upndown.bundle.min.js"
   },
   "maintainers": [
     {
