@@ -43,10 +43,5 @@
       "url": "https://github.com/netgusto/upndown.git"
     }
   ],
-  "licenses": [
-    {
-      "name": "The MIT License (MIT)",
-      "url": "https://github.com/netgusto/upndown/blob/master/LICENSE"
-    }
-  ]
+  "license" : "MIT"
 }
