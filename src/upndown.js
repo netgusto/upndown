@@ -2,7 +2,7 @@
 
 import htmlparser from 'htmlparser2';
 
-export default class upndown {
+module.exports = class upndown {
 
     constructor({ decodeEntities = true } = {}) {
         this.decodeEntities = decodeEntities;
