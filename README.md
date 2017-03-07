@@ -78,6 +78,31 @@ und.convert('<h1>Hello, World !</h1>', function(err, markdown) {
 });
 ```
 
+## Options
+
+### `decodeEntities`
+
+By default Updown will decode all html entities, so source HTML like this:
+
+```html
+<p>I'm an escaped &lt;em&gt;code sample&lt;/em&gt;.</p>
+```
+
+Will become:
+
+```
+I'm an escaped *code sample*.
+```
+
+If your use case does not call for that behavior and you wish HTML entities to
+stay encoded, you can pass an option to the constructor:
+
+```js
+var und = new upndown({decodeEntities: false})
+```
+
+Then just use as normal.
+
 ## Test
 
 ### In the browser

@@ -4,6 +4,10 @@ import htmlparser from 'htmlparser2';
 
 export default class upndown {
 
+    constructor({ decodeEntities = true } = {}) {
+        this.decodeEntities = decodeEntities;
+    }
+
     init() {
         this.olstack = [];
         this.inlineelements = ['strong', 'b', 'i', 'em', 'u', 'a', 'img', 'code'];
@@ -18,7 +22,7 @@ export default class upndown {
             return cbk(null, dom);
         }, { withDomLvl1: false, withStartIndices: false });
 
-        let p = new htmlparser.Parser(handler, { decodeEntities: true });
+        let p = new htmlparser.Parser(handler, { decodeEntities: this.decodeEntities });
         p.write(html);
         p.end();
     }

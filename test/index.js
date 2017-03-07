@@ -40,3 +40,17 @@ for(fixturesectionkey in fixturesindex) {
         }
     });
 }
+
+// Special Tests for Distinct Init Options:
+describe("Custom Init Options", function(){
+    it("Should allow *not* decoding escaped HTML entities",function(done){
+        var und = new upndown({decodeEntities: false});
+        var input = "<code>&lt;em&gt;I'm an escaped code sample&lt;/em&gt;</code>"
+        var expected = "`&lt;em&gt;I'm an escaped code sample&lt;/em&gt;`"
+        und.convert(input,function(err,markdown){
+            if(err){ return done(err); }
+            markdown.should.equal(expected);
+            done()
+        });
+    });
+});
