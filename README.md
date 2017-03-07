@@ -77,6 +77,7 @@ und.convert('<h1>Hello, World !</h1>', function(err, markdown) {
     else { console.log(markdown); } // Outputs: # Hello, World !
 });
 ```
+**Warning: With Node < 0.12.8, you'll have to require a polyfill for the `Promise` functionnality (like https://www.npmjs.com/package/bluebird); see #10 on how to do that.**
 
 ## Options
 
