@@ -26,7 +26,7 @@ Download the zip archive on github, unzip, copy in your web folder, and in your 
 
     var und = new upndown();
     und.convert('<h1>Hello, World !</h1>', function(err, markdown) {
-        if(err) { console.err(err);
+        if(err) { console.err(err); }
         else { console.log(markdown); } // Outputs: # Hello, World !
     });
 
