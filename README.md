@@ -69,7 +69,7 @@ npm install upndown
 **Use**
 ```bash
 node index.js
-
+```
 ```js
 var upndown = require('upndown');
 
