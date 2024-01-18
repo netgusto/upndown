@@ -28,13 +28,35 @@ module.exports = class upndown {
     }
 
     convert(html, cbk, options) {
-        this.parse(html, function(err, dom) {
-            if(err) { return cbk(err, null); }
-            return this.convertDom(dom, function(err2, markdown) {
-                if(err2) { return cbk(err2, null); }
-                return cbk(null, markdown);
-            }, options);
-        }.bind(this));
+        if (typeof cbk === "function") {
+            // callback style
+            this.parse(html, function(err, dom) {
+                if(err) { return cbk(err, null); }
+                return this.convertDom(dom, function(err2, markdown) {
+                    if(err2) { return cbk(err2, null); }
+                    return cbk(null, markdown);
+                }, options);
+            }.bind(this));
+        } else {
+            // returns Promise
+            var upnd = this;
+            return new Promise(function(resolve, reject) {
+                upnd.parse(html, function(err, dom) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        upnd.convertDom(dom, function(err2, markdown) {
+                            if (err2) {
+                                reject(err2);
+                            } else {
+                                resolve(markdown);
+                            }
+
+                        }, cbk); // cbk param is in fact the provided options
+                    }
+                }.bind(upnd));
+            });
+        }
     }
 
     convertDom(dom, cbk, { keepHtml = false } = {}) {
